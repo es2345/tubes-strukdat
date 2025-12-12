@@ -288,7 +288,7 @@
         {# fallback: pakai playlist pertama #}
         {% set pl = featured_playlists[0] %}
         {% set cover = pl.cover_url or url_for('serve_cover', filename='default_cover.png') %}
-        <a href="{{ url_for('playlist_page', playlist_name=pl.name) }}"
+        <a href="{{ url_for('playlist_page_by_id', playlist_id=pl.id) }}"
            class="search-top-card"
            data-shell-link
            style="text-decoration:none; color:inherit;">
@@ -411,7 +411,7 @@
       <div class="search-card-grid">
         {% for pl in playlist_results %}
           {% set cover = pl.cover_url or url_for('serve_cover', filename='default_cover.png') %}
-          <a href="{{ url_for('playlist_page', playlist_name=pl.name) }}"
+          <a href="{{ url_for('playlist_page_by_id', playlist_id=pl.id) }}"
              data-shell-link
              class="card"
              style="text-decoration:none; color:inherit;">

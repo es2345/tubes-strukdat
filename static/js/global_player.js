@@ -1,5 +1,5 @@
 document.addEventListener("DOMContentLoaded", function () {
-  // ===================== DOUBLY LINKED LIST =====================
+
   class Node {
     constructor(track) {
       this.track = track; // {id, title, artist, audio_url, cover_url}
@@ -32,7 +32,7 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     toArray() {
-      return [...this.items].reverse(); // terbaru dulu
+      return [...this.items].reverse();
     }
 
     isEmpty() {
@@ -125,9 +125,10 @@ document.addEventListener("DOMContentLoaded", function () {
       // arr: lama → baru → iterasi mundur untuk ambil kemunculan terakhir
       for (let i = arr.length - 1; i >= 0; i--) {
         const item = arr[i];
-        if (!item || !item.id) continue;
-        if (seen.has(item.id)) continue;
-        seen.add(item.id);
+        if (!item || item.id == null) continue;
+        const key = String(item.id);
+        if (seen.has(key)) continue;
+        seen.add(key);
         deduped.push(item);
       }
 
@@ -149,7 +150,7 @@ document.addEventListener("DOMContentLoaded", function () {
     };
 
     listeningHistoryStack.items = listeningHistoryStack.items.filter(
-      (item) => item.id !== payload.id
+      (item) => String(item.id) !== String(payload.id)
     );
 
     listeningHistoryStack.push(payload);
@@ -184,21 +185,41 @@ document.addEventListener("DOMContentLoaded", function () {
     const result = [];
 
     for (const item of arr) {
-      if (!item || !item.id) continue;
-      if (seen.has(item.id)) continue;
-      seen.add(item.id);
+      if (!item || item.id == null) continue;
+      const key = String(item.id);
+      if (seen.has(key)) continue;
+      seen.add(key);
       result.push(item);
     }
 
     return result;
   }
 
-  window.MusicHistory = {
-    addSearchQuery,
-    getSearchHistory: getSearchHistoryArray,
-    getListeningHistory: getListeningHistoryArray,
-    clearSearchHistory,
-  };
+
+function removeSearchHistoryItem(ts) {
+  if (ts == null) return;
+
+  // hapus 1 item berdasarkan ts (unik per entry)
+  const target = String(ts);
+  searchHistoryStack.items = searchHistoryStack.items.filter(
+    (item) => String(item && item.ts) !== target
+  );
+
+  saveSearchHistory();
+
+  if (typeof window.renderSearchHistorySection === "function") {
+    window.renderSearchHistorySection();
+  }
+}
+
+window.MusicHistory = {
+  addSearchQuery,
+  getSearchHistory: getSearchHistoryArray,
+  getListeningHistory: getListeningHistoryArray,
+  clearSearchHistory,
+  removeSearchHistoryItem,
+};
+
 
   // ===================== DOUBLY LINKED LIST (QUEUE PLAYER) =====================
   class DoublyLinkedList {
@@ -253,6 +274,34 @@ document.addEventListener("DOMContentLoaded", function () {
       }
       return -1;
     }
+
+    findNodeByTrackId(songId) {
+      const target = String(songId);
+      let cur = this.head;
+      while (cur) {
+        const t = cur.track;
+        if (t && t.id != null && String(t.id) === target) return cur;
+        cur = cur.next;
+      }
+      return null;
+    }
+
+    removeNode(node) {
+      if (!node) return false;
+
+      const prev = node.prev;
+      const next = node.next;
+
+      if (prev) prev.next = next;
+      else this.head = next;
+
+      if (next) next.prev = prev;
+      else this.tail = prev;
+
+      node.prev = null;
+      node.next = null;
+      return true;
+    }
   }
 
   // ===================== GLOBAL PLAYER =====================
@@ -292,13 +341,34 @@ document.addEventListener("DOMContentLoaded", function () {
   let currentNode = null;
   let loopMode = "none"; // "none" | "one" | "all"
 
+  // ===================== MISSING HELPERS (FIX) =====================
+  function isPlayableTrack(track) {
+    return !!(track && track.audio_url);
+  }
+
+  function getNextValidNode(startNode, direction) {
+    let cur = startNode || null;
+    const dir = direction === "prev" ? "prev" : "next";
+
+    while (cur) {
+      if (cur.track && isPlayableTrack(cur.track)) return cur;
+      cur = cur[dir];
+    }
+    return null;
+  }
+
   // ===================== HELPERS =====================
   function setUI(track) {
     if (!track) return;
     if (titleEl)  titleEl.textContent  = track.title || "Song title";
     if (artistEl) artistEl.textContent = track.artist || "Artist name";
-    if (coverEl && track.cover_url) {
-      coverEl.style.backgroundImage = `url('${track.cover_url}')`;
+
+    if (coverEl) {
+      if (track.cover_url) {
+        coverEl.style.backgroundImage = `url('${track.cover_url}')`;
+      } else {
+        coverEl.style.backgroundImage = "";
+      }
     }
   }
 
@@ -374,44 +444,62 @@ document.addEventListener("DOMContentLoaded", function () {
     if (currentNode) {
       const t = currentNode.track;
       audio.src = t.audio_url || "";
-      audio.currentTime = st.position || 0;
+
+      try {
+        audio.currentTime = st.position || 0;
+      } catch (_) {}
+
       setUI(t);
+
       if (st.playing && audio.src) {
-        audio
-          .play()
-          .then(() => {
-            updatePlayIcon();
-          })
-          .catch(() => {});
+        audio.play().then(updatePlayIcon).catch(() => {});
       } else {
         updatePlayIcon();
       }
     }
   }
 
-  function playNode(node, resetTime = true) {
+  function playNode(node, opts = {}) {
     if (!node) return;
     currentNode = node;
+
     const t = node.track;
     if (!t || !t.audio_url) return;
 
+    const resumeTime =
+      typeof opts.resumeTime === "number" && opts.resumeTime > 0
+        ? opts.resumeTime
+        : 0;
+    const autoplay = opts.autoplay !== false; // default: true
+
     audio.src = t.audio_url;
-    if (resetTime) audio.currentTime = 0;
+
+    try {
+      audio.currentTime = resumeTime;
+    } catch (_) {}
 
     setUI(t);
-    audio
-      .play()
-      .then(() => {
-        updatePlayIcon();
-        saveState();
-      })
-      .catch((e) => {
-        console.error("Failed to play track:", e);
-      });
+
+    if (autoplay) {
+      audio
+        .play()
+        .then(() => {
+          updatePlayIcon();
+          saveState();
+        })
+        .catch((e) => {
+          console.error("Failed to play track:", e);
+        });
+    } else {
+      audio.pause();
+      updatePlayIcon();
+      saveState();
+    }
+
     pushListeningHistory(t);
   }
 
-  function loadQueueFromTracks(tracks, startIndex = 0) {
+  function loadQueueFromTracks(tracks, startIndex = 0, opts = {}) {
     queue.clear();
     currentNode = null;
 
@@ -425,10 +513,11 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     if (currentNode) {
-      playNode(currentNode);
+      // terusin opsi (autoplay + resumeTime) dari playlist
+      playNode(currentNode, opts);
+    } else {
+      saveState();
     }
-
-    saveState();
   }
 
   function setLoop(mode) {
@@ -455,10 +544,19 @@ document.addEventListener("DOMContentLoaded", function () {
       return;
     }
 
-    if (currentNode.next) {
-      playNode(currentNode.next);
+    const candidate = getNextValidNode(currentNode.next, "next");
+
+    if (candidate) {
+      playNode(candidate);
     } else if (loopMode === "all" && queue.head) {
-      playNode(queue.head);
+      const headValid = getNextValidNode(queue.head, "next");
+      if (headValid) playNode(headValid);
+      else {
+        audio.pause();
+        audio.currentTime = 0;
+        updatePlayIcon();
+        saveState();
+      }
     } else {
       audio.pause();
       audio.currentTime = 0;
@@ -475,10 +573,15 @@ document.addEventListener("DOMContentLoaded", function () {
       return;
     }
 
-    if (currentNode.prev) {
-      playNode(currentNode.prev);
+    // ambil node prev yang valid (skip yang kosong)
+    const candidate = getNextValidNode(currentNode.prev, "prev");
+
+    if (candidate) {
+      playNode(candidate);
     } else if (loopMode === "all" && queue.tail) {
-      playNode(queue.tail);
+      // wrap ke tail, tapi pastikan tail valid juga
+      const tailValid = getNextValidNode(queue.tail, "prev");
+      if (tailValid) playNode(tailValid);
     }
   }
 
@@ -553,22 +656,9 @@ document.addEventListener("DOMContentLoaded", function () {
   audio.addEventListener("ended", () => {
     if (loopMode === "one") {
       audio.currentTime = 0;
-      audio.play();
+      audio.play().catch(() => {});
       return;
     }
-
-    if (loopMode === "all") {
-      if (!currentNode || !currentNode.next) {
-        if (queue.head) {
-          playNode(queue.head);
-          return;
-        }
-      } else {
-        playNext();
-        return;
-      }
-    }
-
     playNext();
   });
 
@@ -657,22 +747,79 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
 
+  function getCurrentInfo() {
+    if (!currentNode || !currentNode.track) return null;
+    const t = currentNode.track;
+    const idx = queue.indexOfNode(currentNode);
+
+    return {
+      id: t.id,
+      title: t.title,
+      artist: t.artist,
+      index: idx,
+      position: audio.currentTime || 0,
+      playing: !audio.paused,
+    };
+  }
+
   // ===================== EXPOSE KE GLOBAL =====================
   window.AppPlayer = {
-    playPlaylist(tracks, startIndex = 0) {
+    playPlaylist(tracks, startIndex = 0, opts = {}) {
       if (!Array.isArray(tracks) || tracks.length === 0) return;
-      loadQueueFromTracks(tracks, startIndex);
+      loadQueueFromTracks(tracks, startIndex, opts || {});
     },
+
     playSingle(track) {
       if (!track || !track.audio_url) return;
-      loadQueueFromTracks([track], 0);
+      loadQueueFromTracks([track], 0, { autoplay: true, resumeTime: 0 });
     },
+
+    removeFromQueueById(songId) {
+      const node = queue.findNodeByTrackId(songId);
+      if (!node) return false;
+
+      const wasCurrent = (node === currentNode);
+      const wasPlaying = !audio.paused;
+
+      // tentukan pengganti kalau yang dihapus adalah current
+      let replacement = null;
+      if (wasCurrent) {
+        replacement =
+          getNextValidNode(node.next, "next") ||
+          getNextValidNode(node.prev, "prev");
+      }
+
+      // hapus node dari linked list
+      queue.removeNode(node);
+
+      if (wasCurrent) {
+        currentNode = replacement;
+        if (currentNode && isPlayableTrack(currentNode.track)) {
+          playNode(currentNode, { autoplay: wasPlaying, resumeTime: 0 });
+        } else {
+          // queue habis
+          currentNode = null;
+          audio.pause();
+          audio.currentTime = 0;
+          audio.src = "";
+          updatePlayIcon();
+          saveState();
+        }
+      } else {
+        // kalau bukan current, cukup save state supaya index/queue keupdate
+        saveState();
+      }
+
+      return true;
+    },
+
     setLoopMode(mode) {
       setLoop(mode);
     },
     next: playNext,
     prev: playPrev,
     togglePlay,
+    getCurrentInfo,
   };
 
   // ===================== INIT DARI localStorage =====================

@@ -313,7 +313,7 @@
               <tr>
                 <td class="index-col">{{ loop.index }}</td>
                 <td>
-                  <a href="{{ url_for('playlist_page', playlist_name=pl.name) }}"
+                  <a href="{{ url_for('playlist_page_by_id', playlist_id=pl.id) }}"
                      data-shell-link
                      style="text-decoration:none; color:inherit;">
                     <div class="song-cell-layout">

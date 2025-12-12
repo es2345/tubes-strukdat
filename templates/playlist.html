@@ -636,7 +636,9 @@
 <div class="playlist-recommend-list">
   {% if recommended_songs %}
     {% for rec in recommended_songs %}
-      <div class="playlist-recommend-item">
+      <div class="playlist-recommend-item"
+     data-audio="{{ rec.audio_url }}"
+     data-duration-label="{{ rec.duration_label or '' }}">
         <div class="playlist-recommend-main">
           <div class="playlist-recommend-cover">
             {% if rec.cover_url %}
@@ -755,14 +757,15 @@
 
   if (!rows.length || !playBtn || !audioEl) return;
 
-  const tracks = rows.map((row, i) => ({
+    const tracks = rows.map((row, i) => ({
     index:     i,
     id:        parseInt(row.dataset.id, 10),
     title:     row.dataset.title  || 'Unknown title',
     artist:    row.dataset.artist || 'Unknown artist',
     audio_url: row.dataset.audio,
     cover_url: row.dataset.cover
-  }));
+}));
+
 
   let currentIndex   = -1;
   let playlistActive = false;   // <-- ini jangan hilang
@@ -770,60 +773,118 @@
   // === Hook global agar script Add bisa sinkron dengan player playlist ===
   window.PlaylistPage = window.PlaylistPage || {};
 
+    window.PlaylistPage.onSongAdded = function (song, rowEl) {
+    if (!song || !rowEl) return;
+
+    const newIndex = tracks.length;
+
+    // update array lokal
+    rows.push(rowEl);
+    tracks.push({
+      index:     newIndex,
+      id:        song.id,
+      title:     song.title  || 'Unknown title',
+      artist:    song.artist || 'Unknown artist',
+      audio_url: song.audio_url,
+      cover_url: song.cover_url
+    });
+
+    // supaya baris baru bisa di-double click
+    rowEl.addEventListener('dblclick', function () {
+      startFrom(newIndex);
+    });
+
+  // ==== INI BAGIAN PENTING: rebuild queue global ====
+  if (window.AppPlayer && typeof window.AppPlayer.playPlaylist === "function") {
+    // info lagu yang SEDANG diputar di global player
+    const info =
+      typeof window.AppPlayer.getCurrentInfo === "function"
+        ? window.AppPlayer.getCurrentInfo()
+        : null;
+
+    const playingIdx =
+      info && info.id != null
+        ? tracks.findIndex((t) => String(t.id) === String(info.id))
+        : -1;
+
+    const shouldSync = playlistActive || playingIdx !== -1;
+    if (!shouldSync) return;
+
+    // posisi waktunya
+    const resumeTime =
+      info && typeof info.position === "number"
+        ? info.position
+        : audioEl.currentTime || 0;
+
+    // index default = currentIndex lokal
+    let safeIndex = currentIndex < 0 ? 0 : currentIndex;
+    currentIndex = safeIndex;
+    markPlaying(safeIndex);
+
+    // kalau tahu ID lagu yang lagi main, cari index-nya di tracks terbaru
+    if (playingIdx !== -1) {
+      safeIndex = playingIdx;
+    }
+
+    // playlist ini yang lagi aktif
+    playlistActive = true;
+
+    // rebuild queue + terusin posisi & status play/pause
+    window.AppPlayer.playPlaylist(tracks, safeIndex, {
+      resumeTime: resumeTime,
+      autoplay: info ? info.playing : !audioEl.paused,
+    });
+  }
+};
+
+
+
     // kalau ada lagu dihapus dari playlist (via AJAX), sinkronkan rows & tracks
-  window.PlaylistPage.onSongRemoved = function (songId) {
-    if (!songId) return;
-    const idNum = parseInt(songId, 10);
+window.PlaylistPage.onSongRemoved = function (songId) {
+  if (!songId) return;
+  const idNum = parseInt(songId, 10);
 
-    // cari index track yang dihapus di array tracks
-    const idx = tracks.findIndex(t => t.id === idNum);
-    if (idx === -1) return;
+  if (window.AppPlayer && typeof window.AppPlayer.removeFromQueueById === "function") {
+    try { window.AppPlayer.removeFromQueueById(idNum); }
+    catch (err) { console.warn("removeFromQueueById error:", err); }
+  }
 
-    // buang dari array lokal
-    tracks.splice(idx, 1);
-    rows.splice(idx, 1);
+  const idx = tracks.findIndex((t) => t.id === idNum);
+  if (idx === -1) return;
 
-    // geser currentIndex kalau perlu
-    if (currentIndex > idx) {
-      currentIndex -= 1;
-    } else if (currentIndex === idx) {
-      // kalau yang dihapus itu lagu yang *lagi* diputar
-      if (tracks.length === 0) {
-        playlistActive = false;
-        currentIndex   = -1;
-        markPlaying(-1);
-        return;
-      }
+  tracks.splice(idx, 1);
+  rows.splice(idx, 1);
 
-      if (currentIndex >= tracks.length) {
-        currentIndex = tracks.length - 1;
-      }
+  if (tracks.length === 0) {
+    playlistActive = false;
+    currentIndex = -1;
+    markPlaying(-1);
+    return;
+  }
 
-      markPlaying(currentIndex);
+  if (currentIndex > idx) currentIndex -= 1;
+  else if (currentIndex === idx) {
+    if (currentIndex >= tracks.length) currentIndex = tracks.length - 1;
+  }
 
-      // rebuild queue DLL biar antrian global ikut update
-      if (
-        playlistActive &&
-        window.AppPlayer &&
-        typeof window.AppPlayer.playPlaylist === 'function'
-      ) {
-        const resumeTime = audioEl.currentTime || 0;
-        const safeIndex  = currentIndex < 0 ? 0 : currentIndex;
+  if (currentIndex < 0) currentIndex = 0;
+  if (currentIndex >= tracks.length) currentIndex = tracks.length - 1;
 
-        window.AppPlayer.playPlaylist(tracks, safeIndex);
-
-        if (!isNaN(resumeTime) && resumeTime > 0) {
-          try {
-            audioEl.currentTime = resumeTime;
-          } catch (e) {
-            console.warn('Gagal set currentTime setelah rebuild queue (delete)', e);
-          }
-        }
-
-        audioEl.play().catch(() => {});
+  if (window.AppPlayer && typeof window.AppPlayer.getCurrentInfo === "function") {
+    const info = window.AppPlayer.getCurrentInfo();
+    if (info && info.id != null) {
+      const playingIdx = tracks.findIndex((t) => String(t.id) === String(info.id));
+      if (playingIdx !== -1) {
+        currentIndex = playingIdx;
+        playlistActive = true;
       }
     }
-  };
+  }
+
+  markPlaying(currentIndex);
+};
+
+
 
 
     // highlight baris yang lagi main
@@ -901,25 +962,41 @@
     });
 
     // Sinkron highlight saat user klik prev/next di player global
-    if (prevBtn) {
-      prevBtn.addEventListener('click', function () {
-        if (!playlistActive) return;
-        if (currentIndex <= 0) return;
+    function syncHighlightFromGlobal() {
+  if (!playlistActive) return;
+  if (!window.AppPlayer || typeof window.AppPlayer.getCurrentInfo !== "function") return;
 
-        currentIndex -= 1;
-        markPlaying(currentIndex);
-      });
-    }
+  const info = window.AppPlayer.getCurrentInfo();
+  if (!info || info.id == null) return;
 
-    if (nextBtn) {
-      nextBtn.addEventListener('click', function () {
-        if (!playlistActive) return;
-        if (currentIndex < 0 || currentIndex >= tracks.length - 1) return;
+  const idx = tracks.findIndex((t) => String(t.id) === String(info.id));
+  if (idx !== -1) {
+    currentIndex = idx;
+    markPlaying(currentIndex);
+  }
+}
 
-        currentIndex += 1;
-        markPlaying(currentIndex);
-      });
-    }
+if (prevBtn) {
+  prevBtn.addEventListener('click', function () {
+    if (!playlistActive) return;
+    // tunggu global player selesai update track
+    setTimeout(syncHighlightFromGlobal, 0);
+  });
+}
+
+if (nextBtn) {
+  nextBtn.addEventListener('click', function () {
+    if (!playlistActive) return;
+    setTimeout(syncHighlightFromGlobal, 0);
+  });
+}
+
+// biar auto-next (ended) juga sinkron
+audioEl.addEventListener("ended", function () {
+  if (!playlistActive) return;
+  setTimeout(syncHighlightFromGlobal, 0);
+});
+
 
     // sinkron ikon tombol hijau dengan status audio global
     audioEl.addEventListener('play',  updatePlayButton);
@@ -932,16 +1009,28 @@
 
    // === 3. AJAX add/remove lagu dari playlist ===
   (function () {
-    const tableBody =
-      document.querySelector('[data-role="playlist-body"]') ||
-      document.querySelector('tbody');
-    const PLAYLIST_NAME = "{{ playlist_name }}";
-    const DEFAULT_COVER = "{{ url_for('serve_cover', filename='default_cover.png') }}";
+    // NOTE: halaman ini pakai "shellNavigate" (SPA partial reload).
+    // Jadi context playlist harus di-refresh setiap kali page-init jalan.
+    window.__playlistAjaxCtx = {
+      playlistName: "{{ playlist_name|e }}",
+      playlistId: {{ playlist.id if playlist else "null" }},
+      defaultCover: "{{ url_for('serve_cover', filename='default_cover.png') }}"
+    };
 
-    if (!tableBody) return;
+    function getTableBody() {
+      return (
+        document.querySelector('[data-role="playlist-body"]') ||
+        document.querySelector('tbody')
+      );
+    }
+
+    if (window.__playlistAjaxBound) return;
+    window.__playlistAjaxBound = true;
 
     // ====== UTIL: RE-INDEX NOMOR URUT ======
 function reindexRows() {
+  const tableBody = getTableBody();
+  if (!tableBody) return;
   const rows = Array.from(tableBody.querySelectorAll('.playlist-row'));
   rows.forEach((row, idx) => {
     row.dataset.index = idx;
@@ -1008,17 +1097,24 @@ function reindexRows() {
     });
 
     // =====================================================
-    // 2) ADD DARI RECOMMENDED (tombol "Add")
-    // =====================================================
-    document.addEventListener('click', async function (e) {
+// 2) ADD DARI RECOMMENDED (tombol "Add")
+// =====================================================
+document.addEventListener('click', async function (e) {
   const btn = e.target.closest('.playlist-recommend-add');
   if (!btn) return;
 
   e.preventDefault();
 
-  const item = btn.closest('.playlist-recommend-item');
+  const tableBody = getTableBody();
+  if (!tableBody) return;
+
+  const ctx = window.__playlistAjaxCtx || {};
+  const PLAYLIST_NAME = ctx.playlistName || "";
+  const DEFAULT_COVER = ctx.defaultCover || "";
+
+  const item       = btn.closest('.playlist-recommend-item');
   const playlistId = btn.dataset.playlistId;
-  const songId = btn.dataset.songId;
+  const songId     = btn.dataset.songId;
 
   if (!playlistId || !songId) {
     console.warn('playlistId / songId hilang di tombol Add.');
@@ -1030,51 +1126,76 @@ function reindexRows() {
   btn.textContent = 'Adding…';
 
   let data = null;
+  let ok   = false;
 
-  // 1) Lagi-lagi: cuma fetch + JSON yang boleh munculin alert gagal
   try {
     const resp = await fetch(`/playlist/${playlistId}/add-song/${songId}`, {
       method: 'POST',
       headers: { 'X-Requested-With': 'XMLHttpRequest' }
     });
 
+    // HTTP 200 kita anggap "umumnya berhasil"
+    ok = resp.ok;
+
+    // Coba parse JSON, tapi kalau gagal jangan langsung dianggap error fatal
     try {
       data = await resp.json();
     } catch (err) {
-      console.warn('Gagal parse JSON add:', err);
+      console.warn('Gagal parse JSON add (boleh diabaikan kalau HTTP 200):', err);
     }
 
-    if (!resp.ok || !data || !data.success) {
-      const msg = (data && data.error) || 'Gagal menambahkan lagu.';
-      throw new Error(msg);
+    // Kalau server ngirim JSON dan explicit bilang gagal → baru kita anggap error
+    if (data && data.success === false) {
+      ok = false;
     }
   } catch (err) {
-    console.error(err);
+    console.error('Network / fetch error saat add lagu:', err);
+    ok = false;
+  }
+
+  if (!ok) {
     alert('Gagal menambahkan lagu ke playlist. Coba reload halaman.');
     btn.disabled = false;
     btn.textContent = originalText;
-    return;  // stop di sini
+    return;
   }
 
-  // 2) kalau backend OK → update UI
+  // ================== UI UPDATE ==================
+
+  // 1) hapus dari daftar Recommended
   if (item) item.remove();
 
-  if (!data.added) {
-    // sudah ada di playlist, gak usah bikin row baru
-    btn.disabled = false;
-    btn.textContent = originalText;
-    return;
+  // 2) ambil info lagu
+  let song = data && data.song ? data.song : null;
+
+  // fallback kalau server tidak ngirim data.song
+  if (!song && item) {
+    const titleEl  = item.querySelector('.playlist-recommend-song');
+    const artistEl = item.querySelector('.playlist-recommend-artist');
+    const coverImg = item.querySelector('.playlist-recommend-cover img');
+
+    song = {
+      id: parseInt(songId, 10),
+      title:  titleEl  ? titleEl.textContent.trim() : 'Unknown title',
+      artist: artistEl ? (artistEl.textContent.split('•')[0].trim() || 'Unknown artist') : 'Unknown artist',
+      album: null,
+      audio_url: item.dataset.audio || '',                 // OPTIONAL: bisa kamu isi dari data-*
+      cover_url: (coverImg && coverImg.getAttribute('src')) || DEFAULT_COVER,
+      duration_label: item.dataset.durationLabel || '-'    // OPTIONAL
+    };
   }
 
-  const song = data.song;
   if (!song) {
+    console.warn('Tidak ada data lagu dari server maupun DOM, batal update UI.');
     btn.disabled = false;
     btn.textContent = originalText;
     return;
   }
 
-  // cek duplikat di DOM
-  const existingRow = tableBody.querySelector(`.playlist-row[data-id="${song.id}"]`);
+  // 3) cek duplikat di DOM
+  const existingRow = tableBody.querySelector(
+    `.playlist-row[data-id="${song.id}"]`
+  );
   if (existingRow) {
     existingRow.classList.add('playlist-row-highlight');
     setTimeout(() => existingRow.classList.remove('playlist-row-highlight'), 600);
@@ -1083,6 +1204,7 @@ function reindexRows() {
     return;
   }
 
+  // 4) bikin baris baru di tabel playlist
   const currentCount = tableBody.querySelectorAll('.playlist-row').length;
   const tr = document.createElement('tr');
   tr.className = 'playlist-row';
@@ -1131,7 +1253,7 @@ function reindexRows() {
   tableBody.appendChild(tr);
   reindexRows();
 
-  // kabari player playlist
+  // 5) kabari player playlist supaya DLL-nya ikut update
   if (window.PlaylistPage && typeof window.PlaylistPage.onSongAdded === 'function') {
     try {
       window.PlaylistPage.onSongAdded(song, tr);
@@ -1143,7 +1265,9 @@ function reindexRows() {
   btn.disabled = false;
   btn.textContent = originalText;
 });
-  })();
+
+
+})();
 
 
   

@@ -449,7 +449,7 @@ def add_song_to_playlist(playlist_id, song_id):
         })
 
     # fallback kalau bukan AJAX
-    next_url = request.form.get("next", url_for("playlist_page_by_id", playlist_id=playlist.id))
+    next_url = request.form.get("next", url_for("playlist_page", playlist_name=playlist.name))
     if next_url:
         return redirect(next_url)
     return redirect(url_for("song_page", song_id=song.id))
@@ -1142,7 +1142,6 @@ def api_search_songs():
                 "title": s.title,
                 "artist": s.artist or "",
                 "coverUrl": cover_url,
-                "audioUrl": s.audio_url or "",   
             }
         )
 
@@ -1246,23 +1245,26 @@ def home_page():
 
 
 # ---------- PLAYLIST DETAIL ----------
-@app.route("/playlist/<int:playlist_id>")
-def playlist_page_by_id(playlist_id):
+@app.route("/playlist/<playlist_name>")
+def playlist_page(playlist_name):
     user = get_current_user()
     if not user:
         session.clear()
         return redirect(url_for("login"))
 
-    playlist = Playlist.query.filter_by(id=playlist_id, user_id=user.id).first()
+    playlist = Playlist.query.filter_by(user_id=user.id, name=playlist_name).first()
     if not playlist:
-        return redirect(url_for("home_page"))
-
-    # pakai relasi many-to-many
-    songs = (
-        playlist.songs
-        .order_by(Song.created_at.asc())
-        .all()
-    )
+        # kalau playlist gak ketemu
+        display_name = playlist_name
+        songs = []
+    else:
+        display_name = playlist.name
+        # pakai relasi many-to-many
+        songs = (
+            playlist.songs
+            .order_by(Song.created_at.asc())
+            .all()
+        )
 
     song_count = len(songs)
 
@@ -1280,26 +1282,31 @@ def playlist_page_by_id(playlist_id):
             duration_label = f"{total_seconds}s"
 
     # Tentukan cover:
-    if playlist.cover_url:
-        # Sudah berisi url_for("serve_cover", filename=...)
+    if playlist and playlist.cover_url:
+    # Sudah berisi url_for("serve_cover", filename=...)
         cover_url = playlist.cover_url
     elif song_count > 0 and songs[0].cover_url:
-        # Pakai cover lagu pertama (juga sudah full URL)
+    # Pakai cover lagu pertama (juga sudah full URL)
         cover_url = songs[0].cover_url
     else:
-        # JANGAN kasih default di Python, biar template yang handle
-        cover_url = None
+    # JANGAN kasih default di Python, biar template yang handle
+        cover_url = None   # atau "" juga boleh
 
-    # Rekomendasi lagu berdasarkan artist & genre di playlist ini
-    recommended_songs = get_recommended_songs_for_playlist(playlist, limit=15)
+
+        # Rekomendasi lagu berdasarkan artist & genre di playlist ini
+    if playlist:
+        recommended_songs = get_recommended_songs_for_playlist(playlist, limit=15)
+    else:
+        recommended_songs = []
+
 
     root_playlists = Playlist.query.filter_by(user_id=user.id, folder_id=None).all()
     folders = Folder.query.filter_by(user_id=user.id).all()
 
     return render_template(
         "playlist.html",
-        playlist_name=playlist.name,
-        playlist=playlist,
+        playlist_name=display_name,
+        playlist=playlist,                 # <-- tambahin ini
         current_user=user,
         root_playlists=root_playlists,
         folders=folders,
@@ -1307,111 +1314,54 @@ def playlist_page_by_id(playlist_id):
         song_count=song_count,
         duration_label=duration_label,
         cover_url=cover_url,
-        recommended_songs=recommended_songs,
+        recommended_songs=recommended_songs,  # <-- dan ini
     )
 
 
-# Backward-compat (URL lama berdasarkan nama) → redirect ke URL berbasis ID
-@app.route("/playlist/<playlist_name>")
-def playlist_page(playlist_name):
+@app.route("/playlist/<playlist_name>/remove-song/<int:song_id>", methods=["POST"])
+def remove_song_from_playlist(playlist_name, song_id):
     user = get_current_user()
     if not user:
         session.clear()
+        if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+            return jsonify({"success": False, "error": "AUTH_REQUIRED"}), 401
         return redirect(url_for("login"))
 
     playlist = Playlist.query.filter_by(user_id=user.id, name=playlist_name).first()
     if not playlist:
+        if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+            return jsonify({"success": False, "error": "PLAYLIST_NOT_FOUND"}), 404
         return redirect(url_for("home_page"))
 
-    return redirect(url_for("playlist_page_by_id", playlist_id=playlist.id))
+    song = Song.query.get_or_404(song_id)
 
-
-
-
-def _remove_song_from_playlist_obj(playlist, song_id: int) -> bool:
-    """Core remove logic shared by ID- dan name-based routes."""
-    song = Song.query.get(song_id)
-    if not song:
-        return False
-
-    # many-to-many, lazy="dynamic" atau list
+    # many-to-many, lazy="dynamic"
     if hasattr(playlist.songs, "filter_by"):
         existing = playlist.songs.filter_by(id=song_id).first()
     else:
         existing = song if song in playlist.songs else None
 
-    if not existing:
-        return False
+    removed = False
+    if existing:
+        playlist.songs.remove(existing)
+        db.session.commit()
+        removed = True
 
-    playlist.songs.remove(existing)
-    db.session.commit()
-    return True
-
-
-@app.route("/playlist/<int:playlist_id>/remove-song/<int:song_id>", methods=["POST"])
-def remove_song_from_playlist_by_id(playlist_id, song_id):
-    user = get_current_user()
-    if not user:
-        session.clear()
-        if request.headers.get("X-Requested-With") == "XMLHttpRequest":
-            return jsonify({"success": False, "error": "AUTH_REQUIRED"}), 401
-        return redirect(url_for("login"))
-
-    playlist = Playlist.query.filter_by(id=playlist_id, user_id=user.id).first()
-    if not playlist:
-        if request.headers.get("X-Requested-With") == "XMLHttpRequest":
-            return jsonify({"success": False, "error": "PLAYLIST_NOT_FOUND"}), 404
-        return redirect(url_for("home_page"))
-
-    removed = _remove_song_from_playlist_obj(playlist, song_id)
-
+    # respon AJAX
     if request.headers.get("X-Requested-With") == "XMLHttpRequest":
         return jsonify({
             "success": True,
             "removed": removed,
             "song_id": song_id,
-            "playlist_id": playlist.id,
+            "playlist_name": playlist.name,
         })
 
+    # fallback redirect biasa
     next_url = request.form.get(
         "next",
-        url_for("playlist_page_by_id", playlist_id=playlist.id)
+        url_for("playlist_page", playlist_name=playlist.name)
     )
     return redirect(next_url)
-
-
-@app.route("/playlist/<playlist_name>/remove-song/<int:song_id>", methods=["POST"])
-def remove_song_from_playlist(playlist_name, song_id):
-    """Backward-compat: endpoint lama berbasis nama."""
-    user = get_current_user()
-    if not user:
-        session.clear()
-        if request.headers.get("X-Requested-With") == "XMLHttpRequest":
-            return jsonify({"success": False, "error": "AUTH_REQUIRED"}), 401
-        return redirect(url_for("login"))
-
-    playlist = Playlist.query.filter_by(user_id=user.id, name=playlist_name).first()
-    if not playlist:
-        if request.headers.get("X-Requested-With") == "XMLHttpRequest":
-            return jsonify({"success": False, "error": "PLAYLIST_NOT_FOUND"}), 404
-        return redirect(url_for("home_page"))
-
-    removed = _remove_song_from_playlist_obj(playlist, song_id)
-
-    if request.headers.get("X-Requested-With") == "XMLHttpRequest":
-        return jsonify({
-            "success": True,
-            "removed": removed,
-            "song_id": song_id,
-            "playlist_id": playlist.id,
-        })
-
-    next_url = request.form.get(
-        "next",
-        url_for("playlist_page_by_id", playlist_id=playlist.id)
-    )
-    return redirect(next_url)
-
 
 
     
@@ -1420,41 +1370,8 @@ def allowed_image_file(filename: str) -> bool:
 
 
 
-@app.route("/playlist/<int:playlist_id>/upload-cover", methods=["POST"])
-def upload_playlist_cover_by_id(playlist_id):
-    user = get_current_user()
-    if not user:
-        session.clear()
-        return redirect(url_for("login"))
-
-    playlist = Playlist.query.filter_by(id=playlist_id, user_id=user.id).first_or_404()
-
-    file = request.files.get("cover")
-    if not file or file.filename == "":
-        return redirect(url_for("playlist_page_by_id", playlist_id=playlist.id))
-
-    if not allowed_image_file(file.filename):
-        return redirect(url_for("playlist_page_by_id", playlist_id=playlist.id))
-
-    filename = secure_filename(file.filename)
-    name, ext = os.path.splitext(filename)
-    unique = datetime.utcnow().strftime("%Y%m%d%H%M%S%f")
-    filename = f"{name}_{unique}{ext}"
-
-    cover_folder = app.config["COVER_UPLOAD_FOLDER"]
-    os.makedirs(cover_folder, exist_ok=True)
-    cover_path = os.path.join(cover_folder, filename)
-    file.save(cover_path)
-
-    playlist.cover_url = url_for("serve_cover", filename=filename)
-    db.session.commit()
-
-    return redirect(url_for("playlist_page_by_id", playlist_id=playlist.id))
-
-
 @app.route("/playlist/<playlist_name>/upload-cover", methods=["POST"])
 def upload_playlist_cover(playlist_name):
-    """Backward-compat: endpoint lama berbasis nama."""
     user = get_current_user()
     if not user:
         session.clear()
@@ -1467,10 +1384,10 @@ def upload_playlist_cover(playlist_name):
 
     file = request.files.get("cover")
     if not file or file.filename == "":
-        return redirect(url_for("playlist_page_by_id", playlist_id=playlist.id))
+        return redirect(url_for("playlist_page", playlist_name=playlist.name))
 
     if not allowed_image_file(file.filename):
-        return redirect(url_for("playlist_page_by_id", playlist_id=playlist.id))
+        return redirect(url_for("playlist_page", playlist_name=playlist.name))
 
     filename = secure_filename(file.filename)
     name, ext = os.path.splitext(filename)
@@ -1482,10 +1399,11 @@ def upload_playlist_cover(playlist_name):
     cover_path = os.path.join(cover_folder, filename)
     file.save(cover_path)
 
+    # simpan URL yang bisa dilayani oleh /covers/<filename>
     playlist.cover_url = url_for("serve_cover", filename=filename)
     db.session.commit()
 
-    return redirect(url_for("playlist_page_by_id", playlist_id=playlist.id))
+    return redirect(url_for("playlist_page", playlist_name=playlist.name))
 
 
 

@@ -25,7 +25,7 @@ block content %}
     url_for('serve_cover', filename='default_cover.png') %}
 
     <a
-      href="{{ url_for('playlist_page', playlist_name=pl.name) }}"
+      href="{{ url_for('playlist_page_by_id', playlist_id=pl.id) }}"
       data-shell-link
       class="card playlist-card"
       style="text-decoration: none; color: inherit"
@@ -45,7 +45,7 @@ block content %}
     url_for('serve_cover', filename='default_cover.png') %}
 
     <a
-      href="{{ url_for('playlist_page', playlist_name=pl.name) }}"
+      href="{{ url_for('playlist_page_by_id', playlist_id=pl.id) }}"
       data-shell-link
       class="card playlist-card"
       style="text-decoration: none; color: inherit"

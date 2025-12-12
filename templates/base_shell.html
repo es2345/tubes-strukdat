@@ -20,7 +20,7 @@
     --bg-panel: #000000;
     --bg-panel-soft: #1b1b1b;
 
-    --accent: #ffffff;              /* aksen = putih */
+    --accent: #ffffff;
     --text-main: #f5f5f5;
     --text-muted: #9a9a9a;
 
@@ -28,25 +28,16 @@
     --radius-card: 8px;
   }
 
-  * {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
-  }
-
-  html, body {
-    height: 100%;
-    margin: 0;
-  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; margin: 0; }
 
   body {
-    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
-      sans-serif;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     background-color: var(--bg-page);
     color: var(--text-main);
     overflow-x: hidden;
     overflow-y: auto;
-    padding-bottom: 90px;  /* ruang buat player fixed di bawah */
+    padding-bottom: 90px; /* ruang buat player fixed */
   }
 
   #sf-page-root,
@@ -58,20 +49,16 @@
     max-height: none !important;
   }
 
-  /* LAYOUT SHELL */
+  /* ===== LAYOUT SHELL ===== */
   .app {
     display: grid;
     grid-template-columns: 320px minmax(0, 1fr);
     grid-template-rows: minmax(0, 1fr);
     min-height: 100vh;
   }
+  .app--sidebar-collapsed { grid-template-columns: 80px minmax(0, 1fr); }
 
-  .app--sidebar-collapsed {
-    grid-template-columns: 80px minmax(0, 1fr);
-  }
-
-  /* ========== SIDEBAR + LIBRARY ========== */
-
+  /* ===== SIDEBAR + LIBRARY ===== */
   .sidebar {
     position: sticky;
     top: 0;
@@ -81,17 +68,13 @@
     display: flex;
     flex-direction: column;
     gap: 10px;
-    transition: width 0.2s ease, min-width 0.2s ease;
+    transition: width .2s ease, min-width .2s ease;
     min-width: 320px;
     width: 320px;
     height: 100vh;
     overflow-y: auto;
   }
-
-  .sidebar--collapsed {
-    min-width: 80px;
-    width: 80px;
-  }
+  .sidebar--collapsed { min-width: 80px; width: 80px; align-items: center; }
 
   .sidebar-top {
     display: flex;
@@ -100,51 +83,38 @@
     gap: 12px;
     padding: 4px 4px 8px;
   }
+  .sidebar--collapsed .sidebar-top { align-items: center; }
 
   .sidebar__logo {
-    width: 36px;
-    height: 36px;
+    width: 36px; height: 36px;
     border-radius: 50%;
-    background-color: #ffffff;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    background: #fff;
+    display: flex; align-items: center; justify-content: center;
     font-weight: 900;
-    color: #000000;
+    color: #000;
     font-size: 18px;
     margin-left: 4px;
   }
 
-  .sidebar__icons {
-    display: flex;
-    flex-direction: row;
-    gap: 8px;
-  }
+  .sidebar__icons { display: flex; flex-direction: row; gap: 8px; }
 
   .sidebar__icon-btn {
-    width: 34px;
-    height: 34px;
+    width: 34px; height: 34px;
     border-radius: 10px;
     border: none;
-    background-color: var(--bg-card);
+    background: var(--bg-card);
     color: var(--text-muted);
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    display: flex; align-items: center; justify-content: center;
     cursor: pointer;
     font-size: 18px;
-    transition: background 0.15s, color 0.15s;
+    transition: background .15s, color .15s;
   }
-
   .sidebar__icon-btn--active,
-  .sidebar__icon-btn:hover {
-    background-color: var(--accent);
-    color: #000000;
-  }
+  .sidebar__icon-btn:hover { background: var(--accent); color: #000; }
 
   .sidebar-divider {
     height: 1px;
-    background-color: var(--border-subtle);
+    background: var(--border-subtle);
     margin: 4px 0 6px;
   }
 
@@ -152,7 +122,7 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 4px 6px 4px 6px;
+    padding: 4px 6px;
   }
 
   .library-header__title {
@@ -163,46 +133,24 @@
     font-weight: 600;
   }
 
-  .library-header__icon {
-    width: 26px;
-    height: 26px;
-    border-radius: 6px;
-    background-color: var(--bg-card);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 14px;
-  }
-
-  .library-header__actions {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-  }
+  .library-header__actions { display: flex; align-items: center; gap: 6px; }
 
   .icon-btn {
-    width: 26px;
-    height: 26px;
+    width: 26px; height: 26px;
     border-radius: 999px;
     border: none;
     background: transparent;
     color: var(--text-muted);
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    display: flex; align-items: center; justify-content: center;
     cursor: pointer;
     font-size: 14px;
   }
-
-  .icon-btn:hover {
-    background-color: #1f1f1f;
-    color: #ffffff;
-  }
+  .icon-btn:hover { background: #1f1f1f; color: #fff; }
 
   .btn-pill {
     border-radius: 999px;
-    background-color: var(--accent);
-    color: #000000;
+    background: var(--accent);
+    color: #000;
     border: none;
     font-size: 12px;
     font-weight: 600;
@@ -212,30 +160,20 @@
     gap: 6px;
     cursor: pointer;
   }
+  .btn-pill:hover { filter: brightness(1.05); }
 
-  .btn-pill:hover {
-    filter: brightness(1.05);
-  }
-
-  .library-filters {
-    padding: 4px 6px 6px;
-  }
+  .library-filters { padding: 4px 6px 6px; }
 
   .chip-lib {
     border-radius: 999px;
     border: none;
     padding: 6px 12px;
-    background-color: #1f1f1f;
+    background: #1f1f1f;
     color: var(--text-main);
     font-size: 12px;
     cursor: pointer;
   }
-
-  .chip-lib--active {
-    background-color: var(--accent);
-    color: #000000;
-    font-weight: 600;
-  }
+  .chip-lib--active { background: var(--accent); color: #000; font-weight: 600; }
 
   .library-search-row {
     padding: 4px 6px;
@@ -247,11 +185,7 @@
     color: var(--text-muted);
   }
 
-  .library-search-box {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-  }
+  .library-search-box { display: flex; align-items: center; gap: 6px; }
 
   .library-search-input {
     background: transparent;
@@ -284,22 +218,16 @@
     border-radius: 8px;
     cursor: pointer;
     font-size: 13px;
-    transition: background 0.15s;
+    transition: background .15s;
   }
-
   .library-item:hover,
-  .library-item--active {
-    background-color: #1a1a1a;
-  }
+  .library-item--active { background: #1a1a1a; }
 
   .library-item__icon {
-    width: 40px;
-    height: 40px;
+    width: 40px; height: 40px;
     border-radius: 8px;
-    background-color: var(--bg-panel-soft);
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    background: var(--bg-panel-soft);
+    display: flex; align-items: center; justify-content: center;
     font-size: 18px;
   }
 
@@ -314,24 +242,16 @@
     font-size: 13px;
     font-weight: 500;
     white-space: nowrap;
-    text-overflow: ellipsis;
     overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .library-item__subtitle {
     font-size: 11px;
     color: var(--text-muted);
     white-space: nowrap;
-    text-overflow: ellipsis;
     overflow: hidden;
-  }
-
-  .sidebar--collapsed {
-    align-items: center;
-  }
-
-  .sidebar--collapsed .sidebar-top {
-    align-items: center;
+    text-overflow: ellipsis;
   }
 
   .sidebar--collapsed .sidebar-divider,
@@ -339,247 +259,15 @@
   .sidebar--collapsed .btn-pill,
   .sidebar--collapsed .library-filters,
   .sidebar--collapsed .library-search-row,
-  .sidebar--collapsed .library-item__text {
-    display: none;
-  }
+  .sidebar--collapsed .library-item__text { display: none; }
 
-  .sidebar--collapsed .library-list-wrapper {
-    width: 100%;
-  }
+  .sidebar--collapsed .library-list-wrapper { width: 100%; }
+  .sidebar--collapsed .library-item { justify-content: center; }
+  .sidebar--collapsed .library-header { justify-content: center; }
+  .sidebar--collapsed .library-folder__children { display: none !important; }
 
-  .sidebar--collapsed .library-item {
-    justify-content: center;
-  }
-
-  .sidebar--collapsed .library-header {
-    justify-content: center;
-  }
-
-  .sidebar--collapsed .library-folder__children {
-    display: none !important;
-  }
-
-  /* CREATE MENU */
-
-.create-menu {
-    position: fixed;              /* DULU absolute, sekarang fixed biar ikut viewport */
-    top: 80px;
-    left: 40px;
-    width: 220px;
-    background-color: var(--bg-card);
-    border-radius: 10px;
-    padding: 8px 0;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
-    font-size: 13px;
-    display: none;
-    z-index: 20;
-}
-
-/* Kalau sidebar di-collapse, geser sedikit ke kiri biar tetap sejajar */
-.app--sidebar-collapsed .create-menu {
-    left: 20px;
-}
-
-
-  .create-menu--open {
-    display: block;
-  }
-
-  .create-menu__item {
-    padding: 8px 14px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    cursor: pointer;
-  }
-
-  .create-menu__item:hover {
-    background-color: #202020;
-  }
-
-  .create-menu__icon {
-    width: 26px;
-    height: 26px;
-    border-radius: 6px;
-    background-color: var(--bg-panel-soft);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 14px;
-  }
-
-  .create-menu__text-main {
-    font-weight: 500;
-  }
-
-  .create-menu__text-sub {
-    font-size: 11px;
-    color: var(--text-muted);
-  }
-
-  /* MAIN AREA */
-
-  .main {
-    grid-row: 1 / 2;
-    background-color: var(--bg-main);
-    display: flex;
-    flex-direction: column;
-  }
-
-  /* PLAYER FIXED BAWAH */
-
-  .player {
-    position: fixed;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    width: 100%;
-    background-color: var(--bg-player);
-    border-top: 1px solid var(--border-subtle);
-    display: grid;
-    grid-template-columns: minmax(0, 260px) minmax(0, 1fr) minmax(0, 200px);
-    align-items: center;
-    gap: 16px;
-    padding: 8px 16px;
-    font-size: 12px;
-    color: var(--text-muted);
-    z-index: 1000;
-  }
-
-  .player__left {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    min-width: 0;
-  }
-
-  .player__cover {
-    width: 42px;
-    height: 42px;
-    border-radius: 4px;
-    background-color: #333333;
-    background-size: cover;
-    background-position: center;
-    flex-shrink: 0;
-  }
-
-  .player__track {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    min-width: 0;
-  }
-
-  .player__track-title {
-    font-size: 13px;
-    color: #ffffff;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  .player__track-artist {
-    font-size: 11px;
-    color: var(--text-muted);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  .player__center {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-self: center;
-    gap: 8px;
-    min-width: 0;
-    width: 100%;
-  }
-
-  .player__buttons {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-  }
-
-  .player__btn {
-    width: 28px;
-    height: 28px;
-    border-radius: 50%;
-    border: 1px solid var(--border-subtle);
-    background: transparent;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-  }
-
-  .player__btn--primary {
-    width: 34px;
-    height: 34px;
-    background-color: var(--accent);
-    color: #000000;
-    border-color: var(--accent);
-  }
-
-  .player__btn--ghost {
-    width: 26px;
-    height: 26px;
-    border-radius: 50%;
-    border: none;
-    background: transparent;
-    color: var(--text-muted);
-    font-size: 14px;
-  }
-
-  .player__btn--loop-active {
-    color: var(--accent);
-  }
-
-  .player__progress {
-    width: 100%;
-    max-width: 50%;
-    height: 6px;
-    border-radius: 999px;
-    background-color: #333333;
-    overflow: hidden;
-    cursor: pointer;
-    margin-bottom: 4px;
-  }
-
-  .player__progress-fill {
-    width: 0%;
-    height: 100%;
-    background-color: var(--accent);
-  }
-
-  .player__right {
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
-    gap: 8px;
-  }
-
-  .player__volume {
-    width: 90px;
-    height: 4px;
-    border-radius: 999px;
-    background-color: #333333;
-    overflow: hidden;
-    cursor: pointer;
-  }
-
-  .player__volume-fill {
-    width: 70%;
-    height: 100%;
-    background-color: var(--accent);
-  }
-
-  /* FOLDER */
-
-  .library-folder {
-    list-style: none;
-  }
+  /* ===== FOLDER ===== */
+  .library-folder { list-style: none; }
 
   .library-folder__header {
     display: flex;
@@ -589,12 +277,9 @@
     border-radius: 8px;
     cursor: pointer;
     font-size: 13px;
-    transition: background 0.15s;
+    transition: background .15s;
   }
-
-  .library-folder__header:hover {
-    background-color: #181818;
-  }
+  .library-folder__header:hover { background: #181818; }
 
   .folder-toggle {
     margin-left: auto;
@@ -625,16 +310,162 @@
     margin-top: 2px;
   }
 
-  .library-folder__children .library-item {
-    background-color: transparent;
+  .library-folder__children .library-item { background: transparent; }
+  .library-folder__children .library-item:hover { background: #181818; }
+
+  /* ===== CREATE MENU ===== */
+  .create-menu {
+    position: fixed;
+    top: 80px;
+    left: 40px;
+    width: 220px;
+    background: var(--bg-card);
+    border-radius: 10px;
+    padding: 8px 0;
+    box-shadow: 0 10px 30px rgba(0,0,0,.6);
+    font-size: 13px;
+    display: none;
+    z-index: 20;
+  }
+  .app--sidebar-collapsed .create-menu { left: 20px; }
+  .create-menu--open { display: block; }
+
+  .create-menu__item {
+    padding: 8px 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+  }
+  .create-menu__item:hover { background: #202020; }
+
+  .create-menu__icon {
+    width: 26px; height: 26px;
+    border-radius: 6px;
+    background: var(--bg-panel-soft);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px;
+  }
+  .create-menu__text-main { font-weight: 500; }
+  .create-menu__text-sub { font-size: 11px; color: var(--text-muted); }
+
+  /* ===== MAIN ===== */
+  .main {
+    grid-row: 1 / 2;
+    background: var(--bg-main);
+    display: flex;
+    flex-direction: column;
   }
 
-  .library-folder__children .library-item:hover {
-    background-color: #181818;
+  /* ===== PLAYER ===== */
+  .player {
+    position: fixed;
+    left: 0; right: 0; bottom: 0;
+    width: 100%;
+    background: var(--bg-player);
+    border-top: 1px solid var(--border-subtle);
+    display: grid;
+    grid-template-columns: minmax(0, 260px) minmax(0, 1fr) minmax(0, 200px);
+    align-items: center;
+    gap: 16px;
+    padding: 8px 16px;
+    font-size: 12px;
+    color: var(--text-muted);
+    z-index: 1000;
   }
 
-  /* KARTU LAGU / PLAYLIST */
+  .player__left { display: flex; align-items: center; gap: 10px; min-width: 0; }
 
+  .player__cover {
+    width: 42px; height: 42px;
+    border-radius: 4px;
+    background: #333;
+    background-size: cover;
+    background-position: center;
+    flex-shrink: 0;
+  }
+
+  .player__track { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+
+  .player__track-title {
+    font-size: 13px;
+    color: #fff;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .player__track-artist {
+    font-size: 11px;
+    color: var(--text-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .player__center {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-self: center;
+    gap: 8px;
+    min-width: 0;
+    width: 100%;
+  }
+
+  .player__buttons { display: flex; align-items: center; gap: 12px; }
+
+  .player__btn {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    border: 1px solid var(--border-subtle);
+    background: transparent;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+  }
+
+  .player__btn--primary {
+    width: 34px; height: 34px;
+    background: var(--accent);
+    color: #000;
+    border-color: var(--accent);
+  }
+
+  .player__btn--ghost {
+    width: 26px; height: 26px;
+    border-radius: 50%;
+    border: none;
+    background: transparent;
+    color: var(--text-muted);
+    font-size: 14px;
+  }
+
+  .player__progress {
+    width: 100%;
+    max-width: 50%;
+    height: 6px;
+    border-radius: 999px;
+    background: #333;
+    overflow: hidden;
+    cursor: pointer;
+    margin-bottom: 4px;
+  }
+
+  .player__progress-fill { width: 0%; height: 100%; background: var(--accent); }
+
+  .player__right { display: flex; align-items: center; justify-content: flex-end; gap: 8px; }
+
+  .player__volume {
+    width: 90px;
+    height: 4px;
+    border-radius: 999px;
+    background: #333;
+    overflow: hidden;
+    cursor: pointer;
+  }
+  .player__volume-fill { width: 70%; height: 100%; background: var(--accent); }
+
+  /* ===== KARTU LAGU / PLAYLIST ===== */
   .song-card-row {
     display: grid;
     grid-auto-flow: column;
@@ -657,38 +488,25 @@
     aspect-ratio: 1 / 1;
     border-radius: 8px;
     overflow: hidden;
-    background: #222222;
+    background: #222;
   }
+  .song-card-cover img { width: 100%; height: 100%; object-fit: cover; }
 
-  .song-card-cover img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
+  .song-card-title { font-size: 14px; font-weight: 600; }
+  .song-card-artist { font-size: 12px; color: var(--text-muted); }
 
-  .song-card-title {
-    font-size: 14px;
-    font-weight: 600;
-  }
-
-  .song-card-artist {
-    font-size: 12px;
-    color: var(--text-muted);
-  }
-
-  /* TOPBAR */
-
+  /* ===== TOPBAR (center) ===== */
   .topbar {
-    background: #000000;
     position: sticky;
     top: 0;
     z-index: 20;
     height: 64px;
     margin: 0 -24px 16px;
     padding: 8px 24px;
+    background: #000;
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: center;
     gap: 16px;
   }
 
@@ -696,25 +514,8 @@
     display: flex;
     align-items: center;
     gap: 12px;
-    flex: 1;
+    flex: 0 1 auto;
     min-width: 0;
-  }
-
-  .topbar__home-btn {
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    border: none;
-    background-color: #151515;
-    color: #ffffff;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-  }
-
-  .topbar__home-btn:hover {
-    background-color: #222222;
   }
 
   .topbar__search {
@@ -730,73 +531,8 @@
     gap: 8px;
   }
 
-  .topbar__search-results {
-    position: absolute;
-    left: 0;
-    right: 0;
-    top: 44px;
-    background: #111111;
-    border-radius: 10px;
-    box-shadow: 0 14px 32px rgba(0, 0, 0, 0.8);
-    padding: 4px 0;
-    max-height: 320px;
-    overflow-y: auto;
-    display: none;
-    z-index: 40;
-  }
-
-  .topbar__search-results--open {
-    display: block;
-  }
-
-  .topbar__search-item {
-    padding: 6px 10px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 13px;
-    cursor: pointer;
-  }
-
-  .topbar__search-item:hover {
-    background: #1f1f1f;
-  }
-
-  .topbar__search-item-cover {
-    width: 32px;
-    height: 32px;
-    border-radius: 4px;
-    background: #333333;
-    background-size: cover;
-    background-position: center;
-    flex-shrink: 0;
-  }
-
-  .topbar__search-item-main {
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-  }
-
-  .topbar__search-item-title {
-    font-weight: 600;
-    font-size: 13px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  .topbar__search-item-artist {
-    font-size: 12px;
-    color: #b3b3b3;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
   .topbar__search-icon {
-    width: 16px;
-    height: 16px;
+    width: 16px; height: 16px;
     border-radius: 50%;
     border: 2px solid #b3b3b3;
   }
@@ -807,73 +543,65 @@
     border: none;
     outline: none;
     background: transparent;
-    color: #ffffff;
+    color: #fff;
     font-size: 14px;
   }
-
-  .topbar__search-input::placeholder {
-    color: #b3b3b3;
-  }
+  .topbar__search-input::placeholder { color: #b3b3b3; }
 
   .topbar__right {
+    position: absolute;
+    right: 24px;
+    top: 50%;
+    transform: translateY(-50%);
     display: flex;
     align-items: center;
     gap: 12px;
   }
 
+  /* fallback layout kecil */
+  @media (max-width: 991px) {
+    .topbar { justify-content: space-between; }
+    .topbar__right { position: static; transform: none; }
+  }
+
+  /* lebar search desktop */
+  @media (min-width: 992px) {
+    .topbar__search { flex: 0 1 520px; max-width: 520px; }
+  }
+
   .topbar__pill {
     border-radius: 999px;
     background: var(--accent);
-    color: #000000;
+    color: #000;
     border: none;
     font-size: 13px;
     font-weight: 600;
     padding: 6px 16px;
     cursor: pointer;
   }
+  .topbar__pill:hover { filter: brightness(1.05); }
 
-  .topbar__pill:hover {
-    filter: brightness(1.05);
-  }
+  .topbar__link { font-size: 13px; color: #b3b3b3; cursor: pointer; }
+  .topbar__link:hover { color: #fff; }
 
-  .topbar__link {
-    font-size: 13px;
-    color: #b3b3b3;
+  .topbar__avatar-wrapper { position: relative; }
+
+  .topbar__avatar {
+    width: 32px; height: 32px;
+    border-radius: 999px;
+    border: 1px solid var(--border-subtle);
+    background: #151515;
+    color: #f5f5f5;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 600;
     cursor: pointer;
   }
+  .topbar__avatar:hover { background: #fff; color: #000; }
 
-  .topbar__link:hover {
-    color: #ffffff;
-  }
-
-  .topbar__avatar-wrapper {
-    position: relative;
-  }
-
-.topbar__avatar {
-  width: 32px;
-  height: 32px;
-  border-radius: 999px;                  /* full bulat */
-  border: 1px solid var(--border-subtle);
-  background: #151515;
-  color: #f5f5f5;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-/* efek hover biar konsisten sama tombol kiri */
-.topbar__avatar:hover {
-  background: #ffffff;
-  color: #000000;
-}
-
-
-  /* PROFILE DROPDOWN */
-
+  /* ===== PROFILE MENU ===== */
   .profile-menu {
     position: absolute;
     right: 0;
@@ -881,22 +609,19 @@
     min-width: 180px;
     background: var(--bg-card);
     border-radius: 8px;
-    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6);
+    box-shadow: 0 16px 40px rgba(0,0,0,.6);
     display: none;
     z-index: 50;
     padding: 4px 0;
   }
-
-  .profile-menu--open {
-    display: block;
-  }
+  .profile-menu--open { display: block; }
 
   .profile-menu__item {
     width: 100%;
     padding: 6px 12px;
     border: none;
     background: transparent;
-    color: #ffffff;
+    color: #fff;
     font-size: 13px;
     display: flex;
     align-items: center;
@@ -904,65 +629,41 @@
     cursor: pointer;
     text-decoration: none;
   }
-
-  .profile-menu__item:hover {
-    background: #222222;
-  }
-
-  .profile-menu__item--danger {
-    color: #f87171;
-  }
+  .profile-menu__item:hover { background: #222; }
+  .profile-menu__item--danger { color: #f87171; }
 
   .profile-menu__divider {
     height: 1px;
-    background: rgba(255, 255, 255, 0.12);
+    background: rgba(255,255,255,.12);
     margin: 4px 0;
   }
+  .profile-menu__icon { font-size: 12px; opacity: .7; }
 
-  .profile-menu__icon {
-    font-size: 12px;
-    opacity: 0.7;
-  }
-
-  /* WRAPPER KONTEN KANAN */
-
+  /* ===== CONTENT WRAPPER ===== */
   .content-wrapper {
     flex: 1;
     display: flex;
     flex-direction: column;
     padding: 0 24px 24px;
-    background: radial-gradient(circle at top, #222222, #000000 55%);
+    background: radial-gradient(circle at top, #222, #000 55%);
   }
 
-  /* CHIP FILTER HOME */
-
-  .chip-row {
-    display: flex;
-    gap: 8px;
-    margin-bottom: 18px;
-  }
+  /* ===== CHIP FILTER HOME ===== */
+  .chip-row { display: flex; gap: 8px; margin-bottom: 18px; }
 
   .chip {
     border-radius: 999px;
     border: none;
     padding: 6px 12px;
     background: #282828;
-    color: #ffffff;
+    color: #fff;
     font-size: 13px;
     cursor: pointer;
   }
+  .chip--active { background: var(--accent); color: #000; font-weight: 600; }
 
-  .chip--active {
-    background: var(--accent);
-    color: #000000;
-    font-weight: 600;
-  }
-
-  /* SECTION HOME */
-
-  .section {
-    margin-bottom: 28px;
-  }
+  /* ===== SECTION HOME ===== */
+  .section { margin-bottom: 28px; }
 
   .section__header {
     display: flex;
@@ -971,28 +672,13 @@
     margin-bottom: 12px;
   }
 
-  .section__title {
-    font-size: 20px;
-    font-weight: 700;
-  }
+  .section__title { font-size: 20px; font-weight: 700; }
 
-  .section__link {
-    font-size: 13px;
-    color: #b3b3b3;
-    cursor: pointer;
-  }
+  .section__link { font-size: 13px; color: #b3b3b3; cursor: pointer; }
+  .section__link:hover { color: #fff; }
 
-  .section__link:hover {
-    color: #ffffff;
-  }
-
-  /* CARD GRID */
-
-  .card-row {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-    gap: 16px;
-  }
+  /* ===== CARD GRID ===== */
+  .card-row { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 16px; }
 
   .card {
     background: var(--bg-card);
@@ -1004,19 +690,15 @@
     cursor: pointer;
     text-decoration: none;
     color: inherit;
-    transition: background 0.15s ease, transform 0.15s ease;
+    transition: background .15s ease, transform .15s ease;
   }
-
-  .card:hover {
-    background: #202020;
-    transform: translateY(-2px);
-  }
+  .card:hover { background: #202020; transform: translateY(-2px); }
 
   .card__image {
     width: 100%;
     aspect-ratio: 1 / 1;
     border-radius: 6px;
-    background: #333333;
+    background: #333;
     background-size: cover;
     background-position: center;
     margin-bottom: 6px;
@@ -1038,691 +720,375 @@
     text-overflow: ellipsis;
   }
 
-  /* RESPONSIVE */
-
-  @media (max-width: 900px) {
-    .topbar__search {
-      display: none;
-    }
-  }
-
+  /* ===== RESPONSIVE ===== */
+  @media (max-width: 900px) { .topbar__search { display: none; } }
   @media (max-width: 700px) {
-    .player__center {
-      display: none;
-    }
-
-    .player__right {
-      margin-left: auto;
-    }
+    .player__center { display: none; }
+    .player__right { margin-left: auto; }
   }
 
-/* ========== MONOCHROME ICONS (PLAYLIST / FOLDER / CREATE MENU) ========== */
-
-/* matikan tampilan emoji default, kita ganti pakai ::before */
-.library-item__icon,
-.create-menu__icon {
-  background: #151515;
-  color: #ffffff;
-  border-radius: 10px;
-  font-size: 0;                 /* sembunyikan emoji aslinya */
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-/* icon playlist: not balok putih */
-.library-item[data-type="playlist"] .library-item__icon::before,
-.create-menu__item[data-create-type="playlist"] .create-menu__icon::before {
-  content: "♪";
-  font-size: 16px;
-  font-weight: 600;
-}
-
-/* icon folder: kotak putih */
-.library-folder .library-item__icon::before,
-.create-menu__item[data-create-type="folder"] .create-menu__icon::before {
-  content: "▢";
-  font-size: 16px;
-}
-
-/* hover: sedikit lebih terang, tetap monochrome */
-.library-item:hover .library-item__icon,
-.library-item--active .library-item__icon,
-.create-menu__item:hover .create-menu__icon {
-  background: #1f1f1f;
-}
-
-/* ========== LOGO BULAT DI SIDEBAR (POJOK KIRI ATAS) ========== */
-
-/* khusus tombol home yang ada di dalam sidebar-top */
-.sidebar-top .topbar__home-btn {
-  width: 40px;
-  height: 40px;
-  border-radius: 999px;
-  border: 1px solid var(--border-subtle);
-  background: #111111;
-  color: #f5f5f5;
-  font-size: 18px;
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.02);
-}
-
-/* hover: invert jadi putih bersih */
-.sidebar-top .topbar__home-btn:hover {
-  background: #ffffff;
-  color: #000000;
-}
-
-
-/* ===== MONO ICON: "Your Library" header ===== */
-.library-header__icon {
-  width: 26px;
-  height: 26px;
-  border-radius: 999px;
-  background: #151515;
-  border: 1px solid var(--border-subtle);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  font-size: 0; /* sembunyikan emoji aslinya */
-}
-
-.library-header__icon::before {
-  content: "♪";
-  font-size: 14px;
-  color: #f5f5f5;
-}
-
-/* ===== MONO ICON: Search in Your Library ===== */
-.library-search-box span:first-child {
-  position: relative;
-  width: 16px;
-  height: 16px;
-  border-radius: 999px;
-  border: 1px solid var(--border-subtle);
-  background: #151515;
-
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-
-  font-size: 0; /* sembunyikan emoji 🔍 */
-}
-
-.library-search-box span:first-child::before {
-  content: "⌕";              /* ikon search tipis */
-  font-size: 11px;
-  color: var(--text-muted);
-}
-
-/* ===== 1. ICON "YOUR LIBRARY" (🎵) JADI MONO ===== */
-/* tombol icon di header library: <button id="btnToggle" class="icon-btn">🎵</button> */
-#btnToggle {
-  width: 26px;
-  height: 26px;
-  border-radius: 999px;
-  /* lingkaran full putih */
-  background: #ffffff;
-  border: 1px solid #ffffff;
-
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  padding: 0;
-  font-size: 0;
-}
-
-/* optional: efek hover biar gak flat banget */
-#btnToggle:hover {
-  background: #f0f0f0;
-  border-color: #f0f0f0;
-}
-
-/* pakai <img>, jadi pseudo ::before gak dipakai lagi */
-#btnToggle::before {
-  content: none;
-}
-
-#btnToggleIcon {
-  width: 14px;
-  height: 14px;
-  display: block;
-}
-
-
-/* ===== 2. TOMBOL HOME (🏠) DI TOPBAR JADI MONO ===== */
-/* ini akan kena kedua home-btn (sidebar & topbar), tapi masih masuk tema */
-.topbar__home-btn {
-  width: 70px;
-  height: 32px;
-  padding: 0;
-  border-radius: 50%;                 /* jadi bulat */
-  border: 1px solid var(--border-subtle);
-  background: #151515;
-  color: #f5f5f5;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  font-size: 0px;     
-}
-
-.topbar__home-btn-anjg {
-  width: 32px;
-  height: 32px;
-  border-radius: 999px;
-  border: 1px solid var(--border-subtle);
-  background: #151515;
-  color: #f5f5f5;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-
-}
-
-.topbar__home-btn-anjg:hover {
-  background: #ffffff;
-  color: #000000;
-}
-
-
-.topbar__home-btn::before {
-  content: "⌂";            /* icon rumah simpel, monochrome */
-  font-size: 16px;
-  line-height: 1;
-}
-
-.topbar__home-btn:hover {
-  background: #ffffff;
-  color: #000000;
-}
-
-/* ===== 3. LOOP BUTTON (🔁 / 1) JADI ICON HITAM–PUTIH ===== */
-/* JS-mu boleh tetap gonta-ganti teks, tapi kita sembunyikan */
-.player__btn--ghost {
-  font-size: 14px;        /* balikin biar textContent kelihatan */
-  position: static;
-}
-
-
-/* ===== LOOP BUTTON: STATE JELAS (OFF vs ON) ===== */
-
-/* base style untuk tombol loop (off) */
-#btnLoop.player__btn--ghost {
-  font-size: 14px;                 /* pakai textContent ⟲ atau 1 */
-  position: static;
-  background: transparent;
-  border: 1px solid var(--border-subtle);
-  color: var(--text-muted);
-  opacity: 0.7;
-  transition:
-    background 0.15s ease,
-    border-color 0.15s ease,
-    color 0.15s ease,
-    transform 0.1s ease,
-    opacity 0.15s ease;
-}
-
-/* matikan pseudo-element lama kalau masih ada */
-#btnLoop::before {
-  content: none !important;
-}
-
-/* state AKTIF (class ini sudah dipakai di JS) */
-#btnLoop.player__btn--loop-active {
-  background: #ffffff;
-  border-color: #ffffff;
-  color: #000000;
-  opacity: 1;
-  transform: scale(1.08);
-}
-
-/* ===== GRID UNTUK RIWAYAT DENGAR (STACK) ===== */
-.section__grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-  gap: 16px;
-  align-items: stretch;
-}
-
-/* tampilan kartu riwayat, biar sama kayak playlist / recommended */
-#listeningHistoryGrid .card {
-  background: var(--bg-card);
-  border-radius: 8px;
-  padding: 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  cursor: pointer;
-  text-decoration: none;
-  color: inherit;
-  transition: background 0.15s ease, transform 0.15s ease;
-}
-
-#listeningHistoryGrid .card:hover {
-  background: #202020;
-  transform: translateY(-2px);
-}
-
-/* cover lagu di riwayat */
-#listeningHistoryGrid .card__image {
-  width: 100%;
-  aspect-ratio: 1 / 1;
-  border-radius: 6px;
-  background-color: #222222;
-  background-size: cover;
-  background-position: center;
-  margin-bottom: 6px;
-}
-
-/* judul & artist di riwayat */
-#listeningHistoryGrid .card__title {
-  font-size: 14px;
-  font-weight: 600;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-#listeningHistoryGrid .card__subtitle {
-  font-size: 12px;
-  color: var(--text-muted);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-/* teks "Belum ada riwayat pemutaran." biar nggak jadi blok aneh */
-.section__empty {
-  font-size: 13px;
-  color: var(--text-muted);
-  padding: 8px 0;
-}
-
-
-/* ====== SEARCH POPOVER (RECENT SEARCHES) ====== */
-
-.topbar__search-popover {
-  position: absolute;
-  top: 48px;                 /* turun dikit dari search bar */
-  left: 0;
-  right: 0;
-
-  /* panel melayang */
-  background: #111111;
-  border-radius: 12px;
-  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.8);
-
-  padding: 10px 0;
-  display: none;
-  z-index: 50;
-}
-
-.topbar__search-popover--visible {
-  display: block;
-}
-
-.topbar__search-popover-inner {
-  padding: 4px 12px 10px;
-  max-height: 320px;
-  overflow-y: auto;
-}
-
-/* header "Recent searches" */
-
-.topbar__search-section-header {
-  font-size: 13px;
-  font-weight: 600;
-  color: #f5f5f5;
-  margin-bottom: 8px;
-}
-
-/* list history */
-
-.topbar__search-history-list {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  margin-bottom: 10px;
-}
-
-/* tiap baris item */
-
-.topbar__search-history-item {
-  width: 100%;
-  border: 0;
-  background: transparent;
-  border-radius: 8px;
-  padding: 6px 8px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  cursor: pointer;
-  text-align: left;
-  color: #f5f5f5;
-}
-
-.topbar__search-history-item:hover {
-  background: #1d1d1d;
-}
-
-/* thumbnail kiri (kotak abu2) */
-
-.topbar__search-thumb {
-  width: 34px;
-  height: 34px;
-  border-radius: 6px;
-  background: #2a2a2a;
-  flex-shrink: 0;
-}
-
-/* teks kanan */
-
-.topbar__search-meta {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-}
-
-.topbar__search-title {
-  font-size: 13px;
-  font-weight: 500;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.topbar__search-subtitle {
-  font-size: 11px;
-  color: var(--text-muted);
-}
-
-/* tombol "Clear recent searches" */
-
-.topbar__search-clear-btn {
-  border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  background: transparent;
-  color: #f5f5f5;
-  font-size: 12px;
-  font-weight: 500;
-  padding: 6px 14px;
-  cursor: pointer;
-  margin-top: 2px;
-}
-
-.topbar__search-clear-btn:hover {
-  background: #ffffff;
-  color: #000000;
-}
-
-/* teks kosong kalau belum ada history */
-
-.topbar__search-empty {
-  font-size: 13px;
-  color: var(--text-muted);
-  padding: 6px 4px 10px;
-}
-
-/* di layar kecil, popover full width search bar */
-@media (max-width: 768px) {
-  .topbar__search-popover {
-    left: 0;
-    right: 0;
-  }
-}
-
-
-/* ===== BATAS LEBAR POPOVER SEARCH ===== */
-
-/* desktop / layar lebar */
-.topbar__search-popover {
-  /* jangan full selebar search bar */
-  width: min(400px, 100%);
-  left: 50%;
-  right: auto;
-  transform: translateX(-50%);
-}
-
-/* isi di dalamnya tetap pakai padding yang sama */
-.topbar__search-popover-inner {
-  padding: 8px 12px 10px;
-}
-
-/* di HP/layar kecil tetap full supaya enak dipakai */
-@media (max-width: 768px) {
-  .topbar__search-popover {
-    width: 100%;
-    left: 0;
-    right: 0;
-    transform: none;
-  }
-}
-
-/* ===== BATAS LEBAR SEARCH BAR + POPOVER ===== */
-
-/* layar lebar (desktop) */
-@media (min-width: 992px) {
-  .topbar__left {
-    gap: 12px;
-  }
-
-  .topbar__search {
-    flex: 0 1 520px;   /* lebar maksimum sekitar 520px */
-    max-width: 520px;
-  }
-
-  /* popover ngikutin lebar search, bukan gede sendiri */
-  .topbar__search-popover {
-    width: 100%;
-    left: 0;
-    right: auto;
-    transform: none;
-  }
-}
-
-/* kalau mau lebih ramping lagi, ubah 520px jadi 460px / 400px */
-
-
-
-/* ===== TOPBAR ALIGN: HOME + SEARCH DI TENGAH, AVATAR DI KANAN ===== */
-
-.topbar {
-  position: sticky;
-  top: 0;
-  z-index: 20;
-  height: 64px;
-  margin: 0 -24px 16px;
-  padding: 8px 24px;
-  background: #000;
-  display: flex;
-  align-items: center;
-  justify-content: center;   /* tengah */
-  gap: 16px;
-}
-
-/* group kiri (home + search) di tengah */
-.topbar__left {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex: 0 1 auto;
-}
-
-/* search bar ukuran “Spotify-ish” */
-@media (min-width: 992px) {
-  .topbar__search {
-    position: relative;
-    flex: 0 1 520px;
-    max-width: 520px;
-    height: 40px;
-    border-radius: 999px;
-    background: #101010;
+  /* ===== MONOCHROME ICONS (PLAYLIST / FOLDER / CREATE MENU) ===== */
+  .library-item__icon,
+  .create-menu__icon {
+    background: #151515;
+    color: #fff;
+    border-radius: 10px;
+    font-size: 0; /* hide emoji */
     display: flex;
     align-items: center;
-    padding: 0 14px;
+    justify-content: center;
+  }
+
+  .library-item[data-type="playlist"] .library-item__icon::before,
+  .create-menu__item[data-create-type="playlist"] .create-menu__icon::before {
+    content: "♪";
+    font-size: 16px;
+    font-weight: 600;
+  }
+
+  .library-folder .library-item__icon::before,
+  .create-menu__item[data-create-type="folder"] .create-menu__icon::before {
+    content: "▢";
+    font-size: 16px;
+  }
+
+  .library-item:hover .library-item__icon,
+  .library-item--active .library-item__icon,
+  .create-menu__item:hover .create-menu__icon { background: #1f1f1f; }
+
+  /* ===== LOGO BULAT DI SIDEBAR (HOME di sidebar-top) ===== */
+  .sidebar-top .topbar__home-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 999px;
+    border: 1px solid var(--border-subtle);
+    background: #111;
+    color: #f5f5f5;
+    font-size: 18px;
+    box-shadow: 0 0 0 1px rgba(255,255,255,.02);
+  }
+  .sidebar-top .topbar__home-btn:hover { background: #fff; color: #000; }
+
+  /* ===== MONO ICON: "Your Library" header ===== */
+  .library-header__icon {
+    width: 26px;
+    height: 26px;
+    border-radius: 999px;
+    background: #151515;
+    border: 1px solid var(--border-subtle);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0;
+  }
+  .library-header__icon::before { content: "♪"; font-size: 14px; color: #f5f5f5; }
+
+  /* ===== MONO ICON: Search in Your Library (span pertama) ===== */
+  .library-search-box span:first-child {
+    position: relative;
+    width: 16px;
+    height: 16px;
+    border-radius: 999px;
+    border: 1px solid var(--border-subtle);
+    background: #151515;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0;
+  }
+  .library-search-box span:first-child::before {
+    content: "⌕";
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+
+  /* ===== BTN TOGGLE (ikon gambar) ===== */
+  #btnToggle {
+    width: 26px;
+    height: 26px;
+    border-radius: 999px;
+    background: #fff;
+    border: 1px solid #fff;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    padding: 0;
+    font-size: 0;
+  }
+  #btnToggle:hover { background: #f0f0f0; border-color: #f0f0f0; }
+  #btnToggle::before { content: none; }
+  #btnToggleIcon { width: 14px; height: 14px; display: block; }
+
+  /* ===== HOME BUTTON MONO (topbar) ===== */
+  .topbar__home-btn {
+    width: 70px;
+    height: 32px;
+    padding: 0;
+    border-radius: 50%;
+    border: 1px solid var(--border-subtle);
+    background: #151515;
+    color: #f5f5f5;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 0;
+  }
+  .topbar__home-btn::before { content: "⌂"; font-size: 16px; line-height: 1; }
+  .topbar__home-btn:hover { background: #fff; color: #000; }
+
+  .topbar__home-btn-anjg {
+    width: 32px;
+    height: 32px;
+    border-radius: 999px;
+    border: 1px solid var(--border-subtle);
+    background: #151515;
+    color: #f5f5f5;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+  }
+  .topbar__home-btn-anjg:hover { background: #fff; color: #000; }
+
+  /* ===== LOOP BUTTON STATE ===== */
+  #btnLoop.player__btn--ghost {
+    font-size: 14px;
+    background: transparent;
+    border: 1px solid var(--border-subtle);
+    color: var(--text-muted);
+    opacity: .7;
+    transition: background .15s ease, border-color .15s ease, color .15s ease, transform .1s ease, opacity .15s ease;
+  }
+  #btnLoop::before { content: none !important; }
+  #btnLoop.player__btn--loop-active {
+    background: #fff;
+    border-color: #fff;
+    color: #000;
+    opacity: 1;
+    transform: scale(1.08);
+  }
+
+  /* ===== LISTENING HISTORY GRID ===== */
+  .section__grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 16px;
+    align-items: stretch;
+  }
+
+  #listeningHistoryGrid .card { /* sama kayak card, tapi dipertahankan */
+    background: var(--bg-card);
+    border-radius: 8px;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
     gap: 8px;
+    cursor: pointer;
+    text-decoration: none;
+    color: inherit;
+    transition: background .15s ease, transform .15s ease;
   }
-}
+  #listeningHistoryGrid .card:hover { background: #202020; transform: translateY(-2px); }
 
-/* avatar & tombol kanan di pojok kanan atas */
-.topbar__right {
-  position: absolute;
-  right: 24px;
-  top: 50%;
-  transform: translateY(-50%);
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-/* kalau layar sempit, balik ke layout biasa */
-@media (max-width: 991px) {
-  .topbar {
-    justify-content: space-between;
+  #listeningHistoryGrid .card__image {
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    border-radius: 6px;
+    background: #222;
+    background-size: cover;
+    background-position: center;
+    margin-bottom: 6px;
   }
-  .topbar__right {
-    position: static;
-    transform: none;
+
+  #listeningHistoryGrid .card__title,
+  #listeningHistoryGrid .card__subtitle {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
-}
+  #listeningHistoryGrid .card__title { font-size: 14px; font-weight: 600; }
+  #listeningHistoryGrid .card__subtitle { font-size: 12px; color: var(--text-muted); }
 
-/* ===== POPOVER (RECENT + LIVE SEARCH) DALAM SATU PANEL ===== */
+  .section__empty { font-size: 13px; color: var(--text-muted); padding: 8px 0; }
 
-.topbar__search-popover {
-  position: absolute;
-  top: 48px;
-  left: 0;
+  /* ===== SEARCH POPOVER (Recent + Results) ===== */
+  .topbar__search-popover {
+    position: absolute;
+    top: 48px;
+    left: 0;
+    width: 100%;
+    background: #111;
+    border-radius: 12px;
+    box-shadow: 0 18px 40px rgba(0,0,0,.8);
+    padding: 10px 0;
+    display: none;
+    z-index: 50;
+  }
+  .topbar__search-popover--visible { display: block; }
+
+  .topbar__search-popover-inner {
+    padding: 8px 12px 10px;
+    max-height: 360px;
+    overflow-y: auto;
+  }
+
+  .topbar__search-section-header {
+    font-size: 13px;
+    font-weight: 600;
+    color: #f5f5f5;
+    margin-bottom: 6px;
+  }
+  .topbar__search-section-header--results { margin-top: 10px; }
+
+  .topbar__search-history-list,
+  .topbar__search-results-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .topbar__search-history-list { margin-bottom: 8px; }
+
+  .topbar__search-history-item,
+  .topbar__search-item {
+    width: 100%;
+    border: 0;
+    background: transparent;
+    border-radius: 8px;
+    padding: 6px 8px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    text-align: left;
+    color: #f5f5f5;
+  }
+  .topbar__search-history-item:hover,
+  .topbar__search-item:hover { background: #1d1d1d; }
+
+  .topbar__search-thumb,
+  .topbar__search-item-cover {
+    width: 34px;
+    height: 34px;
+    border-radius: 6px;
+    background: #2a2a2a;
+    background-size: cover;
+    background-position: center;
+    flex-shrink: 0;
+  }
+
+  .topbar__search-meta,
+  .topbar__search-item-main {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  .topbar__search-title,
+  .topbar__search-item-title {
+    font-size: 13px;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .topbar__search-subtitle,
+  .topbar__search-item-artist {
+    font-size: 11px;
+    color: var(--text-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .topbar__search-clear-btn {
+    border-radius: 999px;
+    border: 1px solid rgba(255,255,255,.16);
+    background: transparent;
+    color: #f5f5f5;
+    font-size: 12px;
+    font-weight: 500;
+    padding: 6px 14px;
+    cursor: pointer;
+    margin-top: 4px;
+  }
+  .topbar__search-clear-btn:hover { background: #fff; color: #000; }
+
+  .topbar__search-empty { font-size: 13px; color: var(--text-muted); padding: 4px 2px 8px; }
+
+  .search-history-item-remove {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    border: 1px solid rgba(255,255,255,.25);
+    background: transparent;
+    color: rgba(255,255,255,.8);
+    cursor: pointer;
+  }
+  .search-history-item-remove:hover { background: rgba(255,255,255,.08); color: #fff; }
+
+  /* ===== Spotify-ish Play Overlay (di cover, kayak gambar kamu) ===== */
+  .topbar__search-item-cover { position: relative; overflow: hidden; }
+
+  .topbar__search-item-cover::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,.28);
+    opacity: 0;
+    transition: opacity .12s ease;
+    z-index: 1;
+  }
+
+  .topbar__search-item:hover .topbar__search-item-cover::after,
+  .topbar__search-item--active-track .topbar__search-item-cover::after { opacity: 1; }
+
+  .topbar__search-play-btn {
+    position: absolute;
+    inset: 0;
+    margin: auto;
+    width: 34px;
+    height: 34px;
+    border-radius: 999px;
+    border: 0;
+    background: rgba(255,255,255,.92);
+    color: #000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    opacity: 0;
+    transform: scale(.96);
+    transition: opacity .12s ease, transform .12s ease;
+    z-index: 2;
+  }
+
+  .topbar__search-item:hover .topbar__search-play-btn,
+  .topbar__search-item--active-track .topbar__search-play-btn,
+  .topbar__search-play-btn:focus-visible {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  /* FIX: tombol X recent search ke kanan */
+.topbar__search-history-item {
   width: 100%;
-  background: #111111;
-  border-radius: 12px;
-  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.8);
-  padding: 10px 0;
-  display: none;
-  z-index: 50;
 }
 
-.topbar__search-popover--visible {
-  display: block;
+.topbar__search-meta {
+  flex: 1 1 auto;   /* ini yang bikin teks ngisi ruang */
+  min-width: 0;     /* biar ellipsis jalan */
 }
 
-.topbar__search-popover-inner {
-  padding: 8px 12px 10px;
-  max-height: 360px;
-  overflow-y: auto;
-}
-
-/* header */
-.topbar__search-section-header {
-  font-size: 13px;
-  font-weight: 600;
-  color: #f5f5f5;
-  margin-bottom: 6px;
-}
-
-.topbar__search-section-header--results {
-  margin-top: 10px;
-}
-
-/* list recent */
-.topbar__search-history-list {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  margin-bottom: 8px;
-}
-
-/* list results (pakai gaya item yang sama) */
-.topbar__search-results-list {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-/* item baris (dipakai untuk history & results) */
-.topbar__search-history-item,
-.topbar__search-item {
-  width: 100%;
-  border: 0;
-  background: transparent;
-  border-radius: 8px;
-  padding: 6px 8px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  cursor: pointer;
-  text-align: left;
-  color: #f5f5f5;
-}
-
-.topbar__search-history-item:hover,
-.topbar__search-item:hover {
-  background: #1d1d1d;
-}
-
-/* thumbnail kiri */
-.topbar__search-thumb,
-.topbar__search-item-cover {
-  width: 34px;
-  height: 34px;
-  border-radius: 6px;
-  background: #2a2a2a;
-  background-size: cover;
-  background-position: center;
+.search-history-item-remove {
+  margin-left: auto;  /* dorong ke kanan */
   flex-shrink: 0;
-}
-
-/* teks kanan */
-.topbar__search-meta,
-.topbar__search-item-main {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-}
-
-.topbar__search-title,
-.topbar__search-item-title {
-  font-size: 13px;
-  font-weight: 500;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.topbar__search-subtitle,
-.topbar__search-item-artist {
-  font-size: 11px;
-  color: var(--text-muted);
-}
-
-/* tombol clear */
-.topbar__search-clear-btn {
-  border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  background: transparent;
-  color: #f5f5f5;
-  font-size: 12px;
-  font-weight: 500;
-  padding: 6px 14px;
-  cursor: pointer;
-  margin-top: 4px;
-}
-
-.topbar__search-clear-btn:hover {
-  background: #ffffff;
-  color: #000000;
-}
-
-/* text kosong */
-.topbar__search-empty {
-  font-size: 13px;
-  color: var(--text-muted);
-  padding: 4px 2px 8px;
 }
 
 </style>
+
 
 
   {% block head_extra %}{% endblock %}
@@ -2060,6 +1426,7 @@
     const pageRootId = "sf-page-root";
 
     async function shellNavigate(url) {
+      
       const res  = await fetch(url, { credentials: "same-origin" });
       const html = await res.text();
 
@@ -2084,7 +1451,7 @@
         }
       });
     }
-
+    
     window.shellNavigate = shellNavigate;
 
     document.addEventListener("click", function (e) {
@@ -2102,6 +1469,7 @@
     window.addEventListener("popstate", function () {
       shellNavigate(location.href).catch(err => console.error(err));
     });
+    
   })();
 
   // ===== VAR GLOBAL =====
@@ -2338,9 +1706,9 @@
       setActiveItem(li);
 
       if (li.dataset.type === 'playlist') {
-        const titleEl = li.querySelector('.library-item__title');
-        const name = titleEl ? titleEl.textContent.trim() : 'My Playlist';
-        const url  = `/playlist/${encodeURIComponent(name)}`;
+        const playlistId = li.dataset.playlistId;
+        const url = playlistId ? `/playlist/${playlistId}` : null;
+        if (!url) return;
 
         if (window.shellNavigate) {
           window.shellNavigate(url);
@@ -2600,9 +1968,10 @@
   // klik kartu playlist di halaman konten
   document.querySelectorAll('.playlist-card').forEach(card => {
     card.addEventListener('click', () => {
+      const playlistId = card.dataset.playlistId;
       const name = card.dataset.playlistName;
-      if (!name) return;
-      const url = `/playlist/${encodeURIComponent(name)}`;
+      const url = playlistId ? `/playlist/${playlistId}` : (name ? `/playlist/${encodeURIComponent(name)}` : null);
+      if (!url) return;
 
       if (window.shellNavigate) {
         window.shellNavigate(url);
@@ -2637,38 +2006,103 @@
     topbarSearchResults.innerHTML = "";
   }
 
-  function renderTopbarResults(songs) {
-    if (!topbarSearchResults) return;
-    topbarSearchResults.innerHTML = "";
+function renderTopbarResults(songs) {
+  if (!topbarSearchResults) return;
+  topbarSearchResults.innerHTML = "";
+  if (!songs || !songs.length) return;
 
-    if (!songs || !songs.length) {
-      return;
-    }
+  songs.forEach((song) => {
+    const item = document.createElement("div");
+    item.className = "topbar__search-item";
+    item.setAttribute("role", "button");
+    item.tabIndex = 0;
 
-    songs.forEach((song) => {
-      const item = document.createElement("button");
-      item.type = "button";
-      item.className = "topbar__search-item";
+    const coverStyle = song.coverUrl ? `background-image:url('${song.coverUrl}')` : "";
 
-      const coverStyle = song.coverUrl
-        ? `background-image:url('${song.coverUrl}')`
-        : "";
+    item.innerHTML = `
+      <div class="topbar__search-item-cover" style="${coverStyle}">
+        <button
+          type="button"
+          class="topbar__search-play-btn"
+          aria-label="Play"
+          title="Play"
+        >▶</button>
+      </div>
 
-      item.innerHTML = `
-        <div class="topbar__search-item-cover" style="${coverStyle}"></div>
-        <div class="topbar__search-item-main">
-          <div class="topbar__search-item-title">${song.title}</div>
-          <div class="topbar__search-item-artist">${song.artist || ""}</div>
-        </div>
-      `;
+      <div class="topbar__search-item-main">
+        <div class="topbar__search-item-title"></div>
+        <div class="topbar__search-item-artist"></div>
+      </div>
+    `;
 
-      item.addEventListener("click", () => {
-        window.location.href = "/song/" + song.id;
-      });
+    item.querySelector(".topbar__search-item-title").textContent  = song.title || "";
+    item.querySelector(".topbar__search-item-artist").textContent = song.artist || "";
 
-      topbarSearchResults.appendChild(item);
-    });
+    const playBtn = item.querySelector(".topbar__search-play-btn");
+    playBtn.addEventListener("click", (e) => {
+  e.preventDefault();
+  e.stopPropagation();
+
+  const track = buildTrackFromSong(song);
+
+  if (!track.audio_url) {
+    console.warn("Search API belum ngirim audioUrl. Fix /api/search_songs.");
+    return;
   }
+
+  const isPlaying = playBtn.dataset.state === "playing";
+
+  // kalau tombol ini lagi "playing" -> pause
+  if (isPlaying) {
+    if (window.AppPlayer && typeof window.AppPlayer.togglePlay === "function") {
+      window.AppPlayer.togglePlay(); // pause
+    }
+    setBtnState(playBtn, false);
+    return;
+  }
+
+  // kalau play lagu ini -> reset ikon lain dulu
+  pauseAllSearchPlayButtons(topbarSearchResults);
+
+  // play
+  if (window.AppPlayer && typeof window.AppPlayer.playSingle === "function") {
+    window.AppPlayer.playSingle(track);
+  }
+
+  // ikon jadi pause
+  setBtnState(playBtn, true);
+});
+
+    topbarSearchResults.appendChild(item);
+  });
+}
+
+function buildTrackFromSong(song) {
+  return {
+    id: song.id,
+    title: song.title,
+    artist: song.artist || "",
+    audio_url: song.audioUrl || song.audio_url || "",
+    cover_url: song.coverUrl || song.cover_url || ""
+  };
+}
+
+function setBtnState(btn, playing) {
+  if (!btn) return;
+  btn.dataset.state = playing ? "playing" : "paused";
+  btn.textContent = playing ? "⏸" : "▶";
+}
+
+function pauseAllSearchPlayButtons(container) {
+  if (!container) return;
+  container.querySelectorAll(".topbar__search-play-btn").forEach((b) => {
+    setBtnState(b, false);
+  });
+}
+
+
+
+
 
   // ENTER untuk submit ke /search + simpan history
   if (topbarSearchInput) {
@@ -2750,6 +2184,22 @@
     });
   }
 
+
+
+  document.addEventListener("click", function (e) {
+  const btn = e.target.closest('[data-action="remove-search-history"]');
+  if (!btn) return;
+
+  e.preventDefault();
+  e.stopPropagation();
+
+  const ts = btn.dataset.ts;
+  if (window.MusicHistory && typeof window.MusicHistory.removeSearchHistoryItem === "function") {
+    window.MusicHistory.removeSearchHistoryItem(ts);
+  }
+});
+
+
   // renderer history (dipanggil dari openSearchPopover & MusicHistory)
   window.renderSearchHistorySection = function () {
     if (!searchHistoryList || !window.MusicHistory) return;
@@ -2764,17 +2214,42 @@
     }
 
     items.slice(0, 10).forEach((item) => {
-      const row = document.createElement("button");
-      row.type = "button";
+      const row = document.createElement("div"); // dari button -> div
       row.className = "topbar__search-history-item";
+      row.setAttribute("role", "button");
+      row.tabIndex = 0;
+
 
       row.innerHTML = `
-        <div class="topbar__search-thumb"></div>
-        <div class="topbar__search-meta">
-          <div class="topbar__search-title">${item.query}</div>
-          <div class="topbar__search-subtitle">Recent search</div>
-        </div>
-      `;
+  <div class="topbar__search-thumb"></div>
+  <div class="topbar__search-meta">
+    <div class="topbar__search-title"></div>
+    <div class="topbar__search-subtitle">Recent search</div>
+  </div>
+  <button class="search-history-item-remove"
+    data-action="remove-search-history"
+    data-ts="${item.ts}"
+    title="Remove"
+    type="button">✕</button>
+`;
+
+      const titleEl = row.querySelector(".topbar__search-title");
+      if (titleEl) titleEl.textContent = item.query;
+
+      const removeBtn = row.querySelector('.search-history-item-remove');
+      if (removeBtn) {
+        removeBtn.addEventListener('click', function (e) {
+          e.preventDefault();
+          e.stopPropagation(); // biar gak ikut buka /search
+
+          const ts = this.dataset.ts;
+          if (window.MusicHistory && typeof window.MusicHistory.removeSearchHistoryItem === "function") {
+            window.MusicHistory.removeSearchHistoryItem(ts);
+          }
+        });
+      }
+
+
 
       row.addEventListener("click", () => {
         window.location.href = "/search?q=" + encodeURIComponent(item.query);
