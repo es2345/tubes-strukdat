@@ -601,22 +601,26 @@
 
         <!-- FILTER BAR (frontend only, belum di-hook ke backend) -->
         <div class="filter-bar">
-          <input class="filter-input" placeholder="Search title, artist, album..." />
-          <select class="filter-select">
-            <option>All Genres</option>
-            <option>Pop</option>
-            <option>Rock</option>
-            <option>EDM</option>
-            <option>Hip-Hop</option>
-            <option>Jazz</option>
+          <input id="songSearch" class="filter-input" placeholder="Search title, artist, album..." autocomplete="off" />
+
+          <select id="genreFilter" class="filter-select">
+            <option value="">All Genres</option>
+            <option value="Pop">Pop</option>
+            <option value="Rock">Rock</option>
+            <option value="EDM">EDM</option>
+            <option value="Hip-Hop">Hip-Hop</option>
+            <option value="Jazz">Jazz</option>
+            <option value="Other">Other</option>
           </select>
-          <select class="filter-select">
-            <option>Sort: Title (A-Z)</option>
-            <option>Sort: Title (Z-A)</option>
-            <option>Sort: Year (Newest)</option>
-            <option>Sort: Year (Oldest)</option>
+
+          <select id="songSort" class="filter-select">
+            <option value="title_asc">Sort: Title (A-Z)</option>
+            <option value="title_desc">Sort: Title (Z-A)</option>
+            <option value="year_desc">Sort: Year (Newest)</option>
+            <option value="year_asc">Sort: Year (Oldest)</option>
           </select>
-          <button class="btn-small-ghost">Reset</button>
+
+          <button id="btnResetSearch" type="button" class="btn-small-ghost">Reset</button>
         </div>
 
         <!-- TABLE -->
@@ -636,7 +640,7 @@
             </thead>
             <tbody>
             {% for song in songs %}
-              <tr>
+              <tr class="song-row">
                 <td>S{{ '%03d' % song.id }}</td>
                 <td>{{ song.title }}</td>
                 <td>{{ song.artist }}</td>
@@ -715,6 +719,199 @@
         menu.classList.remove('user-menu__dropdown--open');
       }
     });
+  });
+
+
+   document.addEventListener("DOMContentLoaded", () => {
+    const input = document.getElementById("songSearch");
+    const resetBtn = document.getElementById("btnResetSearch");
+
+    const tbody = document.querySelector(".table-card table tbody");
+    if (!input || !resetBtn || !tbody) return;
+
+    const songRows = Array.from(tbody.querySelectorAll("tr.song-row"));
+
+ 
+    let noResultsRow = document.getElementById("noResultsRow");
+    if (!noResultsRow) {
+      noResultsRow = document.createElement("tr");
+      noResultsRow.id = "noResultsRow";
+      noResultsRow.style.display = "none";
+      noResultsRow.innerHTML = `
+        <td colspan="8" style="text-align:center; padding:20px 0; color:var(--text-muted);">
+          Tidak ada hasil yang cocok.
+        </td>`;
+      tbody.appendChild(noResultsRow);
+    }
+
+    function norm(s) {
+      return String(s || "").toLowerCase().trim();
+    }
+
+    function applySearch() {
+      const q = norm(input.value);
+      let shown = 0;
+
+      songRows.forEach((row) => {
+        // kolom: 0=ID, 1=Title, 2=Artist, 3=Album
+        const title  = norm(row.children[1]?.innerText);
+        const artist = norm(row.children[2]?.innerText);
+        const album  = norm(row.children[3]?.innerText);
+
+        const hit = !q || title.includes(q) || artist.includes(q) || album.includes(q);
+        row.style.display = hit ? "" : "none";
+        if (hit) shown++;
+      });
+
+      noResultsRow.style.display = (q && shown === 0) ? "" : "none";
+    }
+
+    input.addEventListener("input", applySearch);
+
+    resetBtn.addEventListener("click", () => {
+      input.value = "";
+      applySearch();
+      input.focus();
+    });
+
+    // initial state
+    applySearch();
+  });
+  
+
+
+    // ===== MERGE SORT (stable) =====
+  function mergeSort(arr, compare) {
+    if (!Array.isArray(arr) || arr.length <= 1) return arr.slice();
+
+    const mid = Math.floor(arr.length / 2);
+    const left = mergeSort(arr.slice(0, mid), compare);
+    const right = mergeSort(arr.slice(mid), compare);
+
+    let i = 0, j = 0;
+    const out = [];
+
+    while (i < left.length && j < right.length) {
+      // <= biar STABLE (yang sama nilainya, urutan lama tetap)
+      if (compare(left[i], right[j]) <= 0) out.push(left[i++]);
+      else out.push(right[j++]);
+    }
+    while (i < left.length) out.push(left[i++]);
+    while (j < right.length) out.push(right[j++]);
+
+    return out;
+  }
+
+  function normText(s) {
+    return String(s || "").toLowerCase().trim();
+  }
+
+  function safeYear(s) {
+    const n = parseInt(String(s || "").replace(/[^\d]/g, ""), 10);
+    return Number.isFinite(n) ? n : -999999;
+  }
+
+  document.addEventListener("DOMContentLoaded", () => {
+    const sortEl = document.getElementById("songSort");
+    const tbody = document.querySelector(".table-card table tbody");
+    if (!sortEl || !tbody) return;
+
+    function getSongRows() {
+      // pastikan row lagu punya class "song-row"
+      return Array.from(tbody.querySelectorAll("tr.song-row"));
+    }
+
+    function applySort() {
+      const mode = sortEl.value;
+      const rows = getSongRows();
+
+      // simpan state display (biar kalau lagi ke-filter/search, hidden tetap hidden)
+      const displayMap = new Map(rows.map(r => [r, r.style.display]));
+
+      const compare = (a, b) => {
+        // kolom: 0=ID, 1=Title, 2=Artist, 3=Album, 4=Genre, 5=Year, dst
+        const aTitle = normText(a.children[1]?.innerText);
+        const bTitle = normText(b.children[1]?.innerText);
+        const aYear  = safeYear(a.children[5]?.innerText);
+        const bYear  = safeYear(b.children[5]?.innerText);
+
+        if (mode === "title_asc")  return aTitle.localeCompare(bTitle);
+        if (mode === "title_desc") return bTitle.localeCompare(aTitle);
+        if (mode === "year_desc")  return bYear - aYear;
+        if (mode === "year_asc")   return aYear - bYear;
+
+        return 0;
+      };
+
+      const sorted = mergeSort(rows, compare);
+
+      // re-append urutannya
+      sorted.forEach(r => tbody.appendChild(r));
+
+      // restore display state
+      sorted.forEach(r => {
+        r.style.display = displayMap.get(r) ?? "";
+      });
+    }
+
+    sortEl.addEventListener("change", applySort);
+
+    // default apply saat load
+    applySort();
+  });
+
+
+
+
+    document.addEventListener("DOMContentLoaded", () => {
+    const input = document.getElementById("songSearch");
+    const resetBtn = document.getElementById("btnResetSearch");
+    const genreSel = document.getElementById("genreFilter");
+
+    const tbody = document.querySelector(".table-card table tbody");
+    if (!tbody) return;
+
+    const songRows = Array.from(tbody.querySelectorAll("tr.song-row"));
+
+    function norm(s){ return String(s || "").toLowerCase().trim(); }
+
+    function applyFilter() {
+      const q = norm(input?.value);
+      const g = norm(genreSel?.value); // "" artinya all
+
+      let shown = 0;
+      songRows.forEach((row) => {
+        const title  = norm(row.children[1]?.innerText);
+        const artist = norm(row.children[2]?.innerText);
+        const album  = norm(row.children[3]?.innerText);
+        const genre  = norm(row.children[4]?.innerText); // <== kolom Genre biasanya index 4
+
+        const hitSearch = !q || title.includes(q) || artist.includes(q) || album.includes(q);
+        const hitGenre  = !g || genre === g;
+
+        const hit = hitSearch && hitGenre;
+        row.style.display = hit ? "" : "none";
+        if (hit) shown++;
+      });
+
+      // kalau kamu pakai row "noResultsRow", kamu bisa update juga
+      const noResultsRow = document.getElementById("noResultsRow");
+      if (noResultsRow) {
+        noResultsRow.style.display = (shown === 0 && (q || g)) ? "" : "none";
+      }
+    }
+
+    input?.addEventListener("input", applyFilter);
+    genreSel?.addEventListener("change", applyFilter);
+
+    resetBtn?.addEventListener("click", () => {
+      if (input) input.value = "";
+      if (genreSel) genreSel.value = "";
+      applyFilter();
+      input?.focus();
+    });
+
+    applyFilter();
   });
 </script>
 </body>

@@ -628,6 +628,19 @@
                   Contoh: /audio/namafile.mp3. Kosongkan jika tidak ingin mengubah.
                 </span>
               </div>
+              <div class="form-row">
+  <div class="form-group">
+    <label for="song-cover">Cover image path / URL</label>
+    <input id="song-cover"
+           name="cover_url"
+           type="text"
+           value="{{ song.cover_url or '' }}" />
+  </div>
+  <div class="form-group">
+    <!-- kosongin aja biar grid 2 kolom tetap rapi -->
+  </div>
+</div>
+
             </div>
 
             <div class="form-group">

@@ -21,8 +21,13 @@ block content %}
 
   <div class="card-row">
     {% for pl in root_playlists %} {# ambil cover playlist; kalau belum ada,
-    pakai default_cover #} {% set card_cover = pl.cover_url or
-    url_for('serve_cover', filename='default_cover.png') %}
+    pakai default_cover #} {% set first_song = pl.songs.first() %}
+{% set card_cover =
+  pl.cover_url
+  or (first_song.cover_url if first_song and first_song.cover_url else none)
+  or url_for('serve_cover', filename='default_cover.png')
+%}
+
 
     <a
       href="{{ url_for('playlist_page_by_id', playlist_id=pl.id) }}"
@@ -41,8 +46,13 @@ block content %}
       </div>
     </a>
     {% endfor %} {# PLAYLIST DI DALAM FOLDER #} {% for folder in folders %} {%
-    for pl in folder.playlists %} {% set card_cover = pl.cover_url or
-    url_for('serve_cover', filename='default_cover.png') %}
+    for pl in folder.playlists %} {% set first_song = pl.songs.first() %}
+{% set card_cover =
+  pl.cover_url
+  or (first_song.cover_url if first_song and first_song.cover_url else none)
+  or url_for('serve_cover', filename='default_cover.png')
+%}
+
 
     <a
       href="{{ url_for('playlist_page_by_id', playlist_id=pl.id) }}"

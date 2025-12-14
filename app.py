@@ -830,12 +830,6 @@ def admin_add_song():
 
 @app.route("/admin/edit-song/<int:song_id>", methods=["GET", "POST"])
 def admin_edit_song(song_id):
-    """Form edit data lagu di library global.
-
-    - Hanya bisa diakses admin.
-    - GET  : tampilkan form dengan data lagu.
-    - POST : update field basic (title, artist, album, genre, year, duration, audio_url, description).
-    """
     user = get_current_user()
     if not user:
         session.clear()
@@ -858,7 +852,8 @@ def admin_edit_song(song_id):
         duration_str = (request.form.get("duration") or "").strip()
         audio_url_raw = (request.form.get("audio_url") or "").strip()
         description = (request.form.get("description") or "").strip()
-
+        cover_url = (request.form.get("cover_url") or "").strip()
+        
         if not title:
             errors.append("Title is required.")
         if not artist:
@@ -893,7 +888,8 @@ def admin_edit_song(song_id):
                 duration_ms = total_seconds * 1000
             except Exception:
                 errors.append("Duration harus dalam format mm:ss, misalnya 3:45.")
-
+        
+            
         if errors:
             # render ulang dengan pesan error
             return render_template(
@@ -914,7 +910,9 @@ def admin_edit_song(song_id):
         # hanya update audio_url kalau field diisi
         if audio_url_raw:
             song.audio_url = audio_url_raw
-
+        if cover_url:
+            song.cover_url = cover_url
+            
         song.description = description or None
 
         db.session.commit()
@@ -1320,6 +1318,22 @@ def home_page():
         return redirect(url_for("login"))
 
     root_playlists = Playlist.query.filter_by(user_id=user.id, folder_id=None).all()
+    root_playlists_ui = []
+    for pl in root_playlists:
+        first_song = pl.songs.order_by(Song.created_at.asc()).first()
+
+        cover_url = (
+            pl.cover_url
+            or (first_song.cover_url if first_song and first_song.cover_url else None)
+            or url_for("serve_cover", filename="default_cover.png")
+        )
+
+        root_playlists_ui.append({
+            "id": pl.id,
+            "name": pl.name,
+            "cover_url": cover_url,
+        })
+
     folders = Folder.query.filter_by(user_id=user.id).all()
 
     # rekomendasi personal berbasis playlist user (pakai hash map)
@@ -1378,6 +1392,7 @@ def home_page():
         "home.html",
         current_user=user,
         root_playlists=root_playlists,
+        root_playlists_ui=root_playlists_ui,
         folders=folders,
         recommended_songs=recommended_songs,
         rec_song=rec_song,  
@@ -1459,7 +1474,7 @@ def albums_page():
     folders = Folder.query.filter_by(user_id=user.id).all()
 
     return render_template(
-        "albums.html",
+        "album.html",
         current_user=user,
         root_playlists=root_playlists,
         folders=folders,

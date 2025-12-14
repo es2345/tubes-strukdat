@@ -369,29 +369,44 @@
   const playBtn = document.getElementById("albumPlayBtn");
 
   function getPlayerStateFromAnyKey() {
-    const PREFIX = 'mymusic_player_state_v1';
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
-      if (key && key.startsWith(PREFIX)) {
-        const raw = localStorage.getItem(key);
-        if (!raw) return null;
-        try { return JSON.parse(raw); } catch (e) { return null; }
-      }
+    const BASE = "mymusic_player_state_v1";
+
+    const userKey =
+      (window.MyMusic && window.MyMusic.userKey != null)
+        ? String(window.MyMusic.userKey)
+        : "anon";
+
+    const keysToTry = [BASE + "_" + userKey, BASE + "_anon", BASE];
+
+    for (const key of keysToTry) {
+      const raw = localStorage.getItem(key);
+      if (!raw) continue;
+      try { return JSON.parse(raw); } catch (e) { return null; }
     }
     return null;
   }
 
-  function currentTrackId() {
-    const st = getPlayerStateFromAnyKey();
-    if (!st || !Array.isArray(st.tracks) || st.currentIndex == null) return null;
-    const t = st.tracks[st.currentIndex];
-    return t ? String(t.id) : null;
+  function _path(u) {
+    try { return new URL(u, window.location.origin).pathname; }
+    catch (e) { return String(u || ""); }
   }
 
   function isCurrentInThisAlbum() {
-    const id = currentTrackId();
-    if (!id) return false;
-    return albumTracks.some(t => String(t.id) === id);
+    // 1) paling stabil: cocokkan audio.src
+    const audioEl = document.getElementById("globalAudio");
+    if (audioEl && audioEl.src) {
+      const curPath = _path(audioEl.src);
+      if (albumTracks.some(t => _path(t.audio_url) === curPath)) return true;
+    }
+
+    // 2) fallback: cek state localStorage
+    const st = getPlayerStateFromAnyKey();
+    if (!st || !Array.isArray(st.tracks) || st.currentIndex == null) return false;
+
+    const t = st.tracks[st.currentIndex];
+    if (!t) return false;
+
+    return albumTracks.some(x => String(x.id) === String(t.id));
   }
 
   function syncPlayIcon() {
@@ -402,40 +417,47 @@
     else playBtn.textContent = "⏸";
   }
 
-  // klik tombol play album
-  if (playBtn && window.AppPlayer) {
+  // klik tombol play album (dipasang selalu; cek AppPlayer saat klik biar gak “miss” kalau AppPlayer load belakangan)
+  if (playBtn) {
     playBtn.addEventListener("click", (e) => {
       e.preventDefault();
+      if (!window.AppPlayer || albumTracks.length === 0) return;
+
       const audioEl = document.getElementById("globalAudio");
 
-      if (albumTracks.length === 0) return;
-
-      if (isCurrentInThisAlbum() && audioEl && !audioEl.paused) {
-        AppPlayer.togglePlay();
-      } else {
-        AppPlayer.playPlaylist(albumTracks, 0);
+      // kalau sekarang memang lagi di album: toggle (resume/pause)
+      if (isCurrentInThisAlbum() && audioEl) {
+        window.AppPlayer.togglePlay();
+        return;
       }
-    });
 
-    const audioEl = document.getElementById("globalAudio");
-    if (audioEl) {
-      audioEl.addEventListener("play",  syncPlayIcon);
-      audioEl.addEventListener("pause", syncPlayIcon);
-      audioEl.addEventListener("ended", syncPlayIcon);
-      syncPlayIcon();
-    }
+      // kalau bukan album: mulai dari track 0
+      window.AppPlayer.playPlaylist(albumTracks, 0);
+    });
   }
 
+  // sync ikon saat status audio berubah
+  (function bindAudioSync() {
+    const audioEl = document.getElementById("globalAudio");
+    if (!audioEl) return;
+
+    audioEl.addEventListener("play", syncPlayIcon);
+    audioEl.addEventListener("pause", syncPlayIcon);
+    audioEl.addEventListener("ended", syncPlayIcon);
+    audioEl.addEventListener("loadedmetadata", syncPlayIcon);
+    syncPlayIcon();
+  })();
+
   // klik baris untuk play sesuai index
-  document.querySelectorAll(".album-row").forEach(row => {
-    row.addEventListener("click", (e) => {
+  document.querySelectorAll(".album-row").forEach((row) => {
+    row.addEventListener("click", () => {
       const idx = Number(row.dataset.index || 0);
       if (!window.AppPlayer || !albumTracks[idx]) return;
-      AppPlayer.playPlaylist(albumTracks, idx);
+      window.AppPlayer.playPlaylist(albumTracks, idx);
     });
   });
 
-  // ambil warna header dari cover (pola sama kayak song_detail)
+  // ambil warna header dari cover
   (function applyHeaderColor() {
     const img = document.getElementById("albumCoverImg");
     if (!img) return;
@@ -453,7 +475,9 @@
         document.documentElement.style.setProperty("--bg-header-bottom", `rgb(${Math.floor(r*0.35)},${Math.floor(g*0.35)},${Math.floor(b*0.35)})`);
       } catch (e) {}
     }
-    if (img.complete) setColor(); else img.addEventListener("load", setColor);
+
+    if (img.complete) setColor();
+    else img.addEventListener("load", setColor);
   })();
 
   // List / Compact toggle
@@ -464,11 +488,9 @@
     if (!rootEl) return;
     const compact = (mode === "compact");
     rootEl.classList.toggle("is-compact", compact);
-
     btnList?.classList.toggle("active", !compact);
     btnCompact?.classList.toggle("active", compact);
-
-    try { localStorage.setItem("mymusic_album_view_mode", mode); } catch(e) {}
+    try { localStorage.setItem("mymusic_album_view_mode", mode); } catch (e) {}
   }
 
   btnList?.addEventListener("click", () => setMode("list"));
@@ -477,6 +499,7 @@
   try {
     const saved = localStorage.getItem("mymusic_album_view_mode");
     if (saved === "compact") setMode("compact");
-  } catch(e) {}
+  } catch (e) {}
 </script>
+
 {% endblock %}
