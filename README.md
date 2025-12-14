@@ -45,11 +45,25 @@ Aplikasi web music library berbasis **Flask + SQLAlchemy** dengan fitur **search
 
 ---
 
-## Instalasi & Setup
+## Instalasi & Setup (Windows)
 
 ### 1) Download semuanya makai .zip
 ### 2) Extract semua filenya di tempat(path) yang kamu mau
 ### 3) Buka terminal yang terhubung dengan filenya, dan jgn lupa modifikasi folder venv (tahap 4)
-### 4) Buka file pyvenv.cfg, lalu sesuaikan pathnya : home = C:\Users\Abraham\AppData\Local\Programs\Python\Python311 
-# ini ubah jadi home = C:\Users\Abi (namamu)\AppData\Local\Programs\Python\Python311
+### 4) Buka file pyvenv.cfg, lalu sesuaikan pathnya : 
+### home = C:\Users\Abraham\AppData\Local\Programs\Python\Python311, ini ubah jadi home = C:\Users\Abi (namamu)\AppData\Local\Programs\Python\Python311
+### 5) Lalu di terminal yg sudah terhubung, isi ini di terminal kalau security windows ngehalangin "Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass"
+### 6) Lalu aktifkan venvnya "venv/Scripts/activate"
+### 7) Lalu aktifkan appnya "python app.py"
+### 8) Dan buka http://127.0.0.1:5000/
+### 9) Silahkan uji coba
+
+## Note :
+### admin = admin@example.com
+### pass = admin123
+### utk bikin usernya silahkan sign up karena gak ada fungsi ciptain user otomatis kayak admin ( def create_default_admin() )
+
+
+
+
 
