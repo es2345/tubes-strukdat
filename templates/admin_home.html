@@ -689,6 +689,11 @@
   View All Songs
 </button>
 
+<button class="btn-secondary"
+        onclick="window.location.href='{{ url_for('admin_artists') }}'">
+  Manage Artists
+</button>
+
         </div>
       </div>
 
@@ -758,6 +763,11 @@
     <button class="btn-small"
             onclick="window.location.href='{{ url_for('admin_edit_song', song_id=song.id) }}'">
       Edit
+    </button>
+
+    <button class="btn-small"
+            onclick="window.location.href='{{ url_for('admin_edit_artist', name=song.artist) }}'">
+      Edit Artist
     </button>
     <form method="POST"
           action="{{ url_for('admin_delete_song', song_id=song.id) }}"

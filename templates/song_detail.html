@@ -404,7 +404,7 @@
             +
           </button>
 
-          <button class="song-detail-icon-btn">↓</button>
+
 
           <!-- MENU ADD TO PLAYLIST -->
           <div class="add-to-playlist-menu" id="addToPlaylistMenu">
@@ -512,37 +512,54 @@
 
 // Cari state player dari key apa pun yang prefix-nya "mymusic_player_state_v1"
 function getPlayerStateFromAnyKey() {
-  const PREFIX = 'mymusic_player_state_v1';
-  for (let i = 0; i < localStorage.length; i++) {
-    const key = localStorage.key(i);
-    if (key && key.startsWith(PREFIX)) {
-      const raw = localStorage.getItem(key);
-      if (!raw) return null;
+  const BASE = 'mymusic_player_state_v1';
 
-      try {
-        return JSON.parse(raw);
-      } catch (e) {
-        console.warn('Gagal parse player state:', e);
-        return null;
-      }
+  const userKey =
+    (window.MyMusic && window.MyMusic.userKey != null)
+      ? String(window.MyMusic.userKey)
+      : 'anon';
+
+  const keysToTry = [
+    BASE + '_' + userKey, // yang benar untuk user sekarang
+    BASE + '_anon',       // fallback
+    BASE                // legacy
+  ];
+
+  for (const key of keysToTry) {
+    const raw = localStorage.getItem(key);
+    if (!raw) continue;
+    try {
+      return JSON.parse(raw);
+    } catch (e) {
+      console.warn('Gagal parse player state:', e);
+      return null;
     }
   }
   return null;
 }
 
 function isSameAsCurrentTrack() {
-  const st = getPlayerStateFromAnyKey();
-  if (!st || !Array.isArray(st.tracks) || st.currentIndex == null) {
-    return false;
+  // cara paling stabil: cocokkan audio.src dulu
+  const audioEl = document.getElementById('globalAudio');
+  if (audioEl && audioEl.src) {
+    try {
+      const a = new URL(audioEl.src);
+      const b = new URL(currentTrack.audio_url, window.location.origin);
+      if (a.pathname === b.pathname) return true;
+    } catch (e) {
+      if (audioEl.src.includes(currentTrack.audio_url)) return true;
+    }
   }
+
+  // fallback: cek state localStorage
+  const st = getPlayerStateFromAnyKey();
+  if (!st || !Array.isArray(st.tracks) || st.currentIndex == null) return false;
 
   const t = st.tracks[st.currentIndex];
   if (!t) return false;
 
-  // pake String() biar aman kalau satu pakai number, satu string
   return String(t.id) === String(currentTrack.id);
 }
-
 
   function syncDetailPlayIcon() {
     const audioEl = document.getElementById('globalAudio');

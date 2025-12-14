@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Edit Artist</title>
+  <style>
+    body { background:#000; color:#fff; font-family:system-ui; padding:24px; }
+    .card { max-width:720px; margin:0 auto; background:#111; border:1px solid rgba(255,255,255,.08); border-radius:14px; padding:18px; }
+    label { display:block; font-size:12px; color:#b3b3b3; margin-top:12px; }
+    input, textarea { width:100%; padding:10px 12px; border-radius:10px; border:1px solid rgba(255,255,255,.12); background:#0b0b0b; color:#fff; }
+    textarea { min-height:140px; resize:vertical; }
+    .row { display:flex; gap:10px; margin-top:14px; }
+    .btn { border:0; border-radius:999px; padding:10px 14px; cursor:pointer; font-weight:700; }
+    .btn-primary { background:#1db954; color:#000; }
+    .btn-secondary { background:transparent; color:#fff; border:1px solid rgba(255,255,255,.16); }
+    .hint { font-size:12px; color:#9a9a9a; margin-top:6px; }
+    .preview { margin-top:10px; display:flex; align-items:center; gap:12px; }
+    .preview img { width:56px; height:56px; border-radius:50%; object-fit:cover; border:1px solid rgba(255,255,255,.12); background:#0b0b0b; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h2 style="margin:0 0 6px;">Edit Artist</h2>
+    <div style="color:#b3b3b3; font-size:13px;">Update name, avatar (URL), dan bio.</div>
+
+   <form method="POST"
+      action="{{ url_for('admin_edit_artist_by_id', artist_id=artist.id) }}"
+      style="margin-top:14px;">
+
+      <label>Name</label>
+      <input name="name" value="{{ artist.name }}" required>
+
+      <label for="avatar-url">Avatar image URL (opsional)</label>
+      <input id="avatar-url" name="avatar_url" type="text"
+             value="{{ artist.avatar_url or '' }}"
+             placeholder="https://example.com/avatar.jpg" />
+      <div class="hint">
+        Pakai URL http(s). Kalau value kamu path lokal (mis. <code>artist_avatars/a.png</code>) juga boleh.
+      </div>
+
+      <div class="preview" id="avatarPreviewWrap" style="display:none;">
+        <img id="avatarPreview" alt="Avatar preview">
+        <div style="font-size:12px;color:#b3b3b3;">Preview</div>
+      </div>
+
+      <label>Bio</label>
+      <textarea name="bio" placeholder="Artist bio...">{{ artist.bio or '' }}</textarea>
+
+      <div class="row">
+        <button class="btn btn-primary" type="submit">Save</button>
+        <button class="btn btn-secondary" type="button"
+                onclick="window.location.href='{{ url_for('admin_artists') }}'">
+          Cancel
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <script>
+    (function(){
+      const input = document.getElementById("avatar-url");
+      const wrap  = document.getElementById("avatarPreviewWrap");
+      const img   = document.getElementById("avatarPreview");
+
+      function computeSrc(v){
+        v = (v || "").trim();
+        if (!v) return "";
+        if (v.startsWith("http://") || v.startsWith("https://") || v.startsWith("data:image/")) return v;
+        // fallback: anggap path static relatif
+        return "{{ url_for('static', filename='') }}" + v.replace(/^\/+/, "");
+      }
+
+      function refresh(){
+        const src = computeSrc(input.value);
+        if (!src) { wrap.style.display = "none"; img.removeAttribute("src"); return; }
+        img.src = src;
+        wrap.style.display = "flex";
+      }
+
+      // init dari server (avatar_src dari app.py)
+      const initial = "{{ avatar_src or '' }}";
+      if (initial) {
+        img.src = initial;
+        wrap.style.display = "flex";
+      }
+
+      input.addEventListener("input", refresh);
+    })();
+  </script>
+</body>
+</html>

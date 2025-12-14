@@ -1,0 +1,482 @@
+{% extends "base_shell.html" %}
+
+{% block title %}MyMusic – {{ album }}{% endblock %}
+
+{% block content %}
+<style>
+  /* === ALBUM PAGE (mengikuti pola song_detail.html) === */
+  :root {
+    --bg-header-top: #3f3f3f;
+    --bg-header-bottom: #181818;
+  }
+
+  .album-page {
+    min-height: calc(100vh - 90px);
+    display: flex;
+    flex-direction: column;
+    background: radial-gradient(circle at top left, #b32627 0, #121212 45%, #000 100%);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  .album-header {
+    position: relative;
+    display: flex;
+    align-items: flex-end;
+    gap: 24px;
+    padding: 32px 40px 28px;
+    background: linear-gradient(
+      180deg,
+      var(--bg-header-top),
+      var(--bg-header-bottom) 55%,
+      transparent 100%
+    );
+    overflow: hidden;
+  }
+
+  .album-header-bg {
+    position: absolute;
+    inset: -20px;
+    background-size: cover;
+    background-position: center;
+    filter: blur(40px);
+    transform: scale(1.1);
+    opacity: 0.9;
+    z-index: 0;
+  }
+
+  .album-header::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to bottom, rgba(0,0,0,0.35), #121212 80%);
+    z-index: 1;
+  }
+
+  .album-header > .album-cover,
+  .album-header > .album-info {
+    position: relative;
+    z-index: 2;
+  }
+
+  .album-cover {
+    width: 230px;
+    height: 230px;
+    border-radius: 12px;
+    object-fit: cover;
+    box-shadow: 0 4px 60px rgba(0,0,0,0.7);
+    flex-shrink: 0;
+  }
+
+  .album-info {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 0;
+  }
+
+  .album-badge {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    opacity: 0.8;
+  }
+
+  .album-title {
+    font-size: 64px;
+    font-weight: 800;
+    line-height: 1.05;
+    margin: 4px 0;
+    word-break: break-word;
+  }
+
+  .album-meta {
+    font-size: 14px;
+    opacity: 0.9;
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .album-meta span.dot::before {
+    content: "•";
+    margin: 0 4px;
+    opacity: 0.8;
+  }
+
+  .album-body {
+    flex: 1;
+    padding: 24px 40px 48px;
+    background: linear-gradient(to bottom, #121212, #000);
+  }
+
+  .album-controls {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 18px;
+  }
+
+  .album-controls-left {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .album-play {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    border: none;
+    background: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 26px;
+    cursor: pointer;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.6);
+  }
+  .album-play:active { transform: scale(0.97); }
+
+  .album-view-toggle {
+    font-size: 12px;
+    opacity: 0.75;
+    user-select: none;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    white-space: nowrap;
+  }
+  .album-view-toggle button{
+    background: transparent;
+    border: none;
+    color: inherit;
+    opacity: 0.8;
+    cursor: pointer;
+    padding: 4px 6px;
+    border-radius: 8px;
+  }
+  .album-view-toggle button:hover{ opacity: 1; background: rgba(255,255,255,0.06); }
+  .album-view-toggle .active{ opacity: 1; text-decoration: underline; }
+
+  .album-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 8px;
+  }
+
+  .album-table thead th {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    opacity: 0.7;
+    padding-bottom: 12px;
+    border-bottom: 1px solid rgba(255,255,255,0.15);
+    text-align: left;
+  }
+
+  .album-table thead th.time-col { text-align: right; width: 70px; }
+  .album-table thead th.index-col { width: 50px; text-align: right; padding-right: 16px; }
+
+  .album-table tbody td {
+    padding: 12px 0;
+    font-size: 14px;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+  }
+
+  .album-table tbody tr {
+    cursor: pointer;
+  }
+
+  .album-table tbody tr:hover { background: rgba(255,255,255,0.04); }
+
+  .album-table td.index-col { text-align: right; padding-right: 16px; opacity: 0.7; }
+  .album-table td.time-col { text-align: right; opacity: 0.85; }
+
+  .album-row-main {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+  }
+
+  .album-row-cover {
+    width: 44px;
+    height: 44px;
+    border-radius: 6px;
+    object-fit: cover;
+    flex-shrink: 0;
+  }
+
+  .album-row-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+  }
+
+  .album-row-title {
+    font-size: 14px;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .album-row-artist {
+    font-size: 12px;
+    opacity: 0.7;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* compact mode */
+  .album-page.is-compact .album-row-cover { display: none; }
+  .album-page.is-compact .album-table tbody td { padding: 9px 0; }
+  .album-page.is-compact .album-row-title { font-size: 13px; }
+  .album-page.is-compact .album-row-artist { display: none; }
+
+  @media (max-width: 768px) {
+    .album-header {
+      flex-direction: column;
+      align-items: flex-start;
+      padding-inline: 20px;
+    }
+    .album-cover { width: 200px; height: 200px; }
+    .album-body { padding-inline: 20px; }
+    .album-title { font-size: 44px; }
+  }
+</style>
+
+<div class="content-wrapper">
+  <div class="album-page" id="albumPageRoot">
+
+    <!-- HEADER -->
+    <section class="album-header">
+      <div class="album-header-bg"
+           style="background-image:url('{{ cover or url_for('static', filename='images/default_cover.jpg') }}');">
+      </div>
+
+      <img
+        src="{{ cover or url_for('static', filename='images/default_cover.jpg') }}"
+        alt="{{ album }} cover"
+        class="album-cover"
+        id="albumCoverImg"
+      />
+
+      <div class="album-info">
+        <div class="album-badge">Album</div>
+        <h1 class="album-title">{{ album }}</h1>
+
+        <div class="album-meta">
+          <span>{{ artist or 'Unknown artist' }}</span>
+          <span class="dot"></span>
+          <span>{{ songs|length }} songs</span>
+
+          {% if total_duration_ms is defined %}
+            {% set _tsec = (total_duration_ms // 1000) %}
+            {% set _tm = (_tsec // 60) %}
+            {% set _ts = (_tsec % 60) %}
+            <span class="dot"></span>
+            <span>{{ _tm }}:{% if _ts < 10 %}0{% endif %}{{ _ts }}</span>
+          {% endif %}
+        </div>
+      </div>
+    </section>
+
+    <!-- BODY -->
+    <section class="album-body">
+
+      <div class="album-controls">
+        <div class="album-controls-left">
+          <button class="album-play" id="albumPlayBtn">▶</button>
+        </div>
+
+        <div class="album-view-toggle" aria-label="View mode">
+          <button type="button" id="btnViewList" class="active">List</button>
+          <span style="opacity:.55;">|</span>
+          <button type="button" id="btnViewCompact">Compact</button>
+        </div>
+      </div>
+
+      <table class="album-table">
+        <thead>
+          <tr>
+            <th class="index-col">#</th>
+            <th>Title</th>
+            <th class="time-col">⏱</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for s in songs %}
+            {% set _ms = (s.duration_ms or 0) %}
+            {% set _sec = (_ms // 1000) %}
+            {% set _m = (_sec // 60) %}
+            {% set _s = (_sec % 60) %}
+            <tr class="album-row" data-index="{{ loop.index0 }}">
+              <td class="index-col">{{ loop.index }}</td>
+              <td>
+                <div class="album-row-main">
+                  <img
+                    class="album-row-cover"
+                    src="{{ s.cover_url or cover or url_for('static', filename='images/default_cover.jpg') }}"
+                    alt="cover"
+                  />
+                  <div class="album-row-text">
+                    <div class="album-row-title">{{ s.title }}</div>
+                    <div class="album-row-artist">{{ s.artist or artist or 'Unknown artist' }}</div>
+                  </div>
+                </div>
+              </td>
+              <td class="time-col">
+                {{ _m }}:{% if _s < 10 %}0{% endif %}{{ _s }}
+              </td>
+            </tr>
+          {% else %}
+            <tr>
+              <td colspan="3" style="opacity:.7; padding:16px 0;">
+                Album ini belum punya lagu.
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+
+    </section>
+  </div>
+</div>
+{% endblock %}
+
+{% block body_extra %}
+<script data-page-init>
+  // ===== tracks untuk AppPlayer =====
+  const albumTracks = [
+    {% for s in songs %}
+      {
+        id: {{ s.id }},
+        title: "{{ (s.title or '')|e }}",
+        artist: "{{ (s.artist or artist or 'Unknown artist')|e }}",
+        audio_url: "{{ s.audio_url }}",
+        cover_url: "{{ (s.cover_url or cover or url_for('static', filename='images/default_cover.jpg')) }}"
+      }{% if not loop.last %},{% endif %}
+    {% endfor %}
+  ];
+
+  const rootEl = document.getElementById("albumPageRoot");
+  const playBtn = document.getElementById("albumPlayBtn");
+
+  function getPlayerStateFromAnyKey() {
+    const PREFIX = 'mymusic_player_state_v1';
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith(PREFIX)) {
+        const raw = localStorage.getItem(key);
+        if (!raw) return null;
+        try { return JSON.parse(raw); } catch (e) { return null; }
+      }
+    }
+    return null;
+  }
+
+  function currentTrackId() {
+    const st = getPlayerStateFromAnyKey();
+    if (!st || !Array.isArray(st.tracks) || st.currentIndex == null) return null;
+    const t = st.tracks[st.currentIndex];
+    return t ? String(t.id) : null;
+  }
+
+  function isCurrentInThisAlbum() {
+    const id = currentTrackId();
+    if (!id) return false;
+    return albumTracks.some(t => String(t.id) === id);
+  }
+
+  function syncPlayIcon() {
+    const audioEl = document.getElementById("globalAudio");
+    if (!audioEl || !playBtn) return;
+
+    if (!isCurrentInThisAlbum() || audioEl.paused) playBtn.textContent = "▶";
+    else playBtn.textContent = "⏸";
+  }
+
+  // klik tombol play album
+  if (playBtn && window.AppPlayer) {
+    playBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      const audioEl = document.getElementById("globalAudio");
+
+      if (albumTracks.length === 0) return;
+
+      if (isCurrentInThisAlbum() && audioEl && !audioEl.paused) {
+        AppPlayer.togglePlay();
+      } else {
+        AppPlayer.playPlaylist(albumTracks, 0);
+      }
+    });
+
+    const audioEl = document.getElementById("globalAudio");
+    if (audioEl) {
+      audioEl.addEventListener("play",  syncPlayIcon);
+      audioEl.addEventListener("pause", syncPlayIcon);
+      audioEl.addEventListener("ended", syncPlayIcon);
+      syncPlayIcon();
+    }
+  }
+
+  // klik baris untuk play sesuai index
+  document.querySelectorAll(".album-row").forEach(row => {
+    row.addEventListener("click", (e) => {
+      const idx = Number(row.dataset.index || 0);
+      if (!window.AppPlayer || !albumTracks[idx]) return;
+      AppPlayer.playPlaylist(albumTracks, idx);
+    });
+  });
+
+  // ambil warna header dari cover (pola sama kayak song_detail)
+  (function applyHeaderColor() {
+    const img = document.getElementById("albumCoverImg");
+    if (!img) return;
+
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d");
+    canvas.width = 1; canvas.height = 1;
+
+    function setColor() {
+      try {
+        ctx.drawImage(img, 0, 0, 1, 1);
+        const d = ctx.getImageData(0, 0, 1, 1).data;
+        const r = d[0], g = d[1], b = d[2];
+        document.documentElement.style.setProperty("--bg-header-top", `rgb(${r},${g},${b})`);
+        document.documentElement.style.setProperty("--bg-header-bottom", `rgb(${Math.floor(r*0.35)},${Math.floor(g*0.35)},${Math.floor(b*0.35)})`);
+      } catch (e) {}
+    }
+    if (img.complete) setColor(); else img.addEventListener("load", setColor);
+  })();
+
+  // List / Compact toggle
+  const btnList = document.getElementById("btnViewList");
+  const btnCompact = document.getElementById("btnViewCompact");
+
+  function setMode(mode) {
+    if (!rootEl) return;
+    const compact = (mode === "compact");
+    rootEl.classList.toggle("is-compact", compact);
+
+    btnList?.classList.toggle("active", !compact);
+    btnCompact?.classList.toggle("active", compact);
+
+    try { localStorage.setItem("mymusic_album_view_mode", mode); } catch(e) {}
+  }
+
+  btnList?.addEventListener("click", () => setMode("list"));
+  btnCompact?.addEventListener("click", () => setMode("compact"));
+
+  try {
+    const saved = localStorage.getItem("mymusic_album_view_mode");
+    if (saved === "compact") setMode("compact");
+  } catch(e) {}
+</script>
+{% endblock %}

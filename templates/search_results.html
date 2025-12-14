@@ -383,7 +383,7 @@
   {% if artist_results %}
     <div class="search-artists-row">
       {% for artist in artist_results %}
-        {% set cover = artist.avatar_url or url_for('static', filename='images/default_artist.jpg') %}
+        {% set cover = artist.avatar_url or url_for('serve_cover', filename='default_cover.png') %}
         <a
           href="{{ url_for('artist_profile_page', artist_name=artist.name) }}"
           class="search-artist-card"
@@ -407,27 +407,7 @@
 
 
 
-    {% if playlist_results %}
-      <div class="search-card-grid">
-        {% for pl in playlist_results %}
-          {% set cover = pl.cover_url or url_for('serve_cover', filename='default_cover.png') %}
-          <a href="{{ url_for('playlist_page_by_id', playlist_id=pl.id) }}"
-             data-shell-link
-             class="card"
-             style="text-decoration:none; color:inherit;">
-            <div class="card__image"
-                 style="background-image:url('{{ cover }}');"></div>
-            <div class="card__title">{{ pl.name }}</div>
-            <div class="card__subtitle">
-              Playlist • {{ pl.owner_name or 'User' }}
-            </div>
-          </a>
-        {% endfor %}
-      </div>
-    {% else %}
-      <p class="section__empty">No playlists found.</p>
-    {% endif %}
-  </section>
+
 
 </div>
 {% endblock %}

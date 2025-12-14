@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Artists</title>
+  <style>
+    body{ background:#000; color:#fff; font-family:system-ui; padding:24px; }
+    .wrap{ max-width:900px; margin:0 auto; }
+    a,button{ color:inherit; }
+    .row{ display:flex; gap:10px; align-items:center; margin-bottom:14px; }
+    input{ flex:1; padding:10px 12px; border-radius:10px; border:1px solid rgba(255,255,255,.12); background:#0b0b0b; color:#fff; }
+    table{ width:100%; border-collapse:collapse; font-size:13px; }
+    th,td{ padding:10px 8px; border-bottom:1px solid rgba(255,255,255,.08); }
+    .btn{ border-radius:999px; padding:8px 12px; border:1px solid rgba(255,255,255,.14); background:transparent; cursor:pointer; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h2 style="margin:0 0 12px;">Artists</h2>
+
+    <form class="row" method="GET">
+      <input name="q" value="{{ q or '' }}" placeholder="Search artist name...">
+      <button class="btn" type="submit">Search</button>
+    </form>
+
+    <table>
+      <thead>
+        <tr><th>Name</th><th>Avatar</th><th>Action</th></tr>
+      </thead>
+      <tbody>
+        {% for a in artists %}
+          <tr>
+            <td>{{ a.name }}</td>
+<td>
+  {% if a.avatar_url %}
+    {% set avatar_src =
+      a.avatar_url if a.avatar_url.startswith('http://') or a.avatar_url.startswith('https://')
+      else url_for('static', filename=a.avatar_url)
+    %}
+    <img src="{{ avatar_src }}"
+         alt="{{ a.name }}"
+         style="width:40px;height:40px;border-radius:50%;object-fit:cover;">
+  {% else %}
+    -
+  {% endif %}
+</td>
+
+            <td>
+              <button class="btn" type="button"
+                onclick="window.location.href='{{ url_for('admin_edit_artist_by_id', artist_id=a.id) }}'">
+                Edit
+              </button>
+            </td>
+          </tr>
+        {% else %}
+          <tr><td colspan="3">No artists found.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</body>
+</html>

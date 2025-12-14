@@ -1,13 +1,16 @@
 {% extends "base_shell.html" %}
 
 {% block title %}
-  {% if view == 'playlists' %}
-    Semua Playlist – MyMusic
-  {% elif view == 'history' %}
-    Riwayat Lagu – MyMusic
-  {% else %}
-    Semua Lagu – MyMusic
-  {% endif %}
+{% if view == 'playlists' %}
+  Semua Playlist – MyMusic
+{% elif view == 'history' %}
+  Riwayat Lagu – MyMusic
+{% elif view == 'albums' %}
+  Semua Album – MyMusic
+{% else %}
+  Semua Lagu – MyMusic
+{% endif %}
+
 {% endblock %}
 
 {% block content %}
@@ -17,6 +20,8 @@
       <h2 class="section__title">All Playlist</h2>
     {% elif view == 'history' %}
       <h2 class="section__title">Listening History</h2>
+    {% elif view == 'albums' %}
+    <h2 class="section__title">All Albums</h2>
     {% else %}
       <h2 class="section__title">All Song</h2>
     {% endif %}
@@ -65,11 +70,100 @@
     </div>
 
   {# ==================== VIEW: HISTORY ==================== #}
-  {% elif view == 'history' %}
-  <div class="section__grid" id="historyGrid">
+{% elif view == 'history' %}
+  <div class="card-row" id="historyGrid">
     <p class="section__empty">Loading...</p>
   </div>
 
+  <script data-page-init>
+    (function () {
+      const container = document.getElementById('historyGrid');
+      if (!container) return;
+
+      const FALLBACK_COVER = "{{ url_for('serve_cover', filename='default_cover.png') }}";
+      let tries = 0;
+      const MAX_TRIES = 25;
+
+      function renderFullHistory() {
+        if (!window.MusicHistory) return false;
+
+        const arr = (window.MusicHistory.getListeningHistory?.() || []).slice(0, 40);
+        container.innerHTML = '';
+
+        if (!arr.length) {
+          container.innerHTML = '<p class="section__empty">There are no songs, start listening now.</p>';
+          return true;
+        }
+
+        arr.forEach(function (track) {
+          if (!track || !track.id) return;
+
+          const cover  = track.cover_url || FALLBACK_COVER;
+          const title  = track.title  || 'Unknown title';
+          const artist = track.artist || 'Unknown artist';
+
+          const link = document.createElement('a');
+          link.href = "/song/" + track.id;
+          link.setAttribute('data-shell-link', '');
+          link.style.textDecoration = 'none';
+          link.style.color = 'inherit';
+
+          const card = document.createElement('article');
+          card.className = 'card song-card';
+          card.innerHTML = `
+            <div class="card__image" style="background-image:url('${cover}')"></div>
+            <div class="card__title">${title}</div>
+            <div class="card__subtitle">${artist}</div>
+          `;
+
+          link.appendChild(card);
+          container.appendChild(link);
+        });
+
+        return true;
+      }
+
+      function tick() {
+        const ok = renderFullHistory();
+        if (ok) return;
+        tries++;
+        if (tries >= MAX_TRIES) {
+          container.innerHTML = '<p class="section__empty">There are no songs, start listening now.</p>';
+          return;
+        }
+        setTimeout(tick, 120);
+      }
+
+      // expose kalau mau dipanggil ulang dari tempat lain
+      window.renderFullListeningHistory = function () { tries = 0; tick(); };
+
+      tick();
+    })();
+  </script>
+
+
+  {# ======================VIEW : ALBUMS========================= #}
+
+{% elif view == 'albums' %}
+  <div class="card-row">
+    {% for al in albums %}
+      <a href="{{ url_for('album_page', artist=al.artist, album=al.album) }}"
+         data-shell-link
+         class="card playlist-card"
+         style="text-decoration:none; color:inherit;">
+        <div class="card__image" style="background-image:url('{{ al.cover_url }}');"></div>
+        <div class="card__title">{{ al.album }}</div>
+        <div class="card__subtitle">Album • {{ al.artist }} • {{ al.song_count }} lagu</div>
+      </a>
+    {% else %}
+      <p class="section__empty">There are no albums</p>
+    {% endfor %}
+  </div>
+
+
+
+
+  
   {# penting: pakai data-page-init supaya shell SPA mengeksekusi script ini #}
   <script data-page-init>
     (function () {
@@ -79,7 +173,7 @@
       function renderFullHistory() {
         if (!window.MusicHistory) {
           container.innerHTML =
-            '<p class="section__empty">Belum ada riwayat pemutaran.</p>';
+            '<p class="section__empty">There are no songs, start listening now.</p>';
           return;
         }
 
@@ -88,7 +182,7 @@
 
         if (!arr.length) {
           container.innerHTML =
-            '<p class="section__empty">Belum ada riwayat pemutaran.</p>';
+            '<p class="section__empty">There are no songs, start listening now.</p>';
           return;
         }
 

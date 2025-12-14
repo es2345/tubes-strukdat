@@ -1370,7 +1370,7 @@
     const arr = window.MusicHistory.getListeningHistory(); // terbaru dulu
     if (!arr || arr.length === 0) {
       container.innerHTML =
-        '<p class="section__empty">Belum ada riwayat pemutaran.</p>';
+        '<p class="section__empty">There are no songs, start listening now.</p>';
       return;
     }
 
@@ -2073,6 +2073,24 @@ function renderTopbarResults(songs) {
   setBtnState(playBtn, true);
 });
 
+// klik di baris hasil -> buka detail lagu (atau bisa kamu ganti jadi play)
+item.addEventListener("click", () => {
+  const url = "/song/" + song.id;
+
+  // kalau kamu pakai SPA ringan
+  if (window.shellNavigate) window.shellNavigate(url);
+  else window.location.href = url;
+
+  // optional: tutup popover
+  if (typeof closeSearchPopover === "function") closeSearchPopover();
+});
+
+// biar Enter juga jalan (aksesibilitas)
+item.addEventListener("keydown", (e) => {
+  if (e.key === "Enter") item.click();
+});
+
+
     topbarSearchResults.appendChild(item);
   });
 }
@@ -2209,7 +2227,7 @@ function pauseAllSearchPlayButtons(container) {
 
     if (!items.length) {
       searchHistoryList.innerHTML =
-        '<div class="topbar__search-empty">Belum ada riwayat pencarian.</div>';
+        '<div class="topbar__search-empty">There are no songs, start listening now.</div>';
       return;
     }
 

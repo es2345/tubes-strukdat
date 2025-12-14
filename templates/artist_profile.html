@@ -289,7 +289,13 @@
     <div class="profile-detail-page">
       <div class="profile-scroll">
 
-        {% set avatar_bg = artist.avatar_url and url_for('static', filename=artist.avatar_url) %}
+        {% set avatar_bg =
+  artist.avatar_url
+  and (
+    artist.avatar_url if artist.avatar_url.startswith('http')
+    else url_for('static', filename=artist.avatar_url)
+  )
+%}
 
         <!-- HEADER -->
         <section class="profile-header-wrapper">
@@ -301,13 +307,17 @@
 
           <div class="profile-header">
             <div class="artist-cover">
-              {% if artist.avatar_url %}
-                <img src="{{ url_for('static', filename=artist.avatar_url) }}"
-                     alt="{{ artist.name }}">
-              {% else %}
-                {{ artist.name[:2] | upper }}
-              {% endif %}
-            </div>
+  {% if artist.avatar_url %}
+    {% if artist.avatar_url.startswith('http://') or artist.avatar_url.startswith('https://') %}
+      <img src="{{ artist.avatar_url }}" alt="{{ artist.name }}">
+    {% else %}
+      <img src="{{ url_for('static', filename=artist.avatar_url) }}" alt="{{ artist.name }}">
+    {% endif %}
+  {% else %}
+    {{ artist.name[:2] | upper }}
+  {% endif %}
+</div>
+
 
             <div class="profile-meta-block">
               <div class="profile-label">Artist</div>
@@ -317,9 +327,6 @@
                 <span>{{ songs|length }} song{% if songs|length != 1 %}s{% endif %}</span>
               </div>
 
-              <div class="profile-extra-row">
-                <button id="btnArtistEdit" class="btn-pill">Edit artist</button>
-              </div>
             </div>
           </div>
         </section>

@@ -116,7 +116,7 @@ class ArtistProfile(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(255), unique=True, nullable=False)
-    avatar_url = db.Column(db.String(255), nullable=True)
+    avatar_url = db.Column(db.String(455), nullable=True)
     bio = db.Column(db.Text, nullable=True)
 
 
@@ -194,12 +194,7 @@ def artist_profile_page(artist_name):
 # struktur data hashmap
 
 def get_recommended_songs_for_user(user, limit: int = 20):
-    """
-    Algoritma rekomendasi sederhana berbasis konten:
-    - pakai hash map (dict) untuk menyimpan preferensi artist & genre user
-    - sumber preferensi = lagu-lagu di playlist user
-    - hasil: list Song yang belum ada di playlist user, diurutkan dari skor tertinggi
-    """
+
 
     # 1. Kumpulkan semua lagu di playlist user
     user_playlists = Playlist.query.filter_by(user_id=user.id).all()
@@ -570,7 +565,14 @@ def search_results_page():
 
         avatar_url = None
         if profile and profile.avatar_url:
-            avatar_url = url_for("static", filename=profile.avatar_url)
+            if (
+                profile.avatar_url.startswith("http://")
+                or profile.avatar_url.startswith("https://")
+                or profile.avatar_url.startswith("data:")
+            ):
+                avatar_url = profile.avatar_url
+            else:
+                avatar_url = url_for("static", filename=profile.avatar_url)
         elif cover_song and cover_song.cover_url:
             avatar_url = cover_song.cover_url
 
@@ -756,14 +758,12 @@ def admin_add_song():
 
                 # baca durasi otomatis (kalau pakai mutagen)
                 try:
-                    from mutagen import File as MutagenFile
                     info = MutagenFile(file_path)
                     if info is not None and info.info is not None:
                         duration_ms = int(info.info.length * 1000)
                 except Exception as e:
                     print("Gagal baca durasi:", e)
-            else:
-                errors.append("Format file audio tidak didukung.")
+
 
         # ====== HANDLE COVER (URL atau file) ======
         cover_url_input = (request.form.get("cover_url") or "").strip()
@@ -950,6 +950,101 @@ def admin_delete_song(song_id):
     db.session.commit()
 
     return redirect(url_for("admin_view_all_song"))
+
+
+
+# ---------- ADMIN: ARTISTS ----------
+@app.route("/admin/artists", methods=["GET"])
+def admin_artists():
+    user = get_current_user()
+    if not user:
+        session.clear()
+        return redirect(url_for("login"))
+
+    if user.role != "admin":
+        return redirect(url_for("home_page"))
+
+    q = (request.args.get("q") or "").strip()
+
+    query = ArtistProfile.query
+    if q:
+        query = query.filter(ArtistProfile.name.ilike(f"%{q}%"))
+
+    artists = query.order_by(ArtistProfile.name.asc()).all()
+    return render_template("admin_artist.html", artists=artists, q=q)
+
+
+@app.route("/admin/artists/edit/<path:name>", methods=["GET"])
+def admin_edit_artist(name):
+    user = get_current_user()
+    if not user:
+        session.clear()
+        return redirect(url_for("login"))
+
+    if user.role != "admin":
+        return redirect(url_for("home_page"))
+
+    name = (name or "").strip()
+    if not name:
+        return redirect(url_for("admin_artists"))
+
+    # cari artist profile berdasarkan nama; buat jika belum ada
+    artist = ArtistProfile.query.filter(func.lower(ArtistProfile.name) == name.lower()).first()
+    if not artist:
+        artist = ArtistProfile(name=name)
+        db.session.add(artist)
+        db.session.commit()
+
+    return redirect(url_for("admin_edit_artist_by_id", artist_id=artist.id))
+
+
+@app.route("/admin/artists/<int:artist_id>/edit", methods=["GET", "POST"])
+def admin_edit_artist_by_id(artist_id):
+    user = get_current_user()
+    if not user:
+        session.clear()
+        return redirect(url_for("login"))
+
+    if user.role != "admin":
+        return redirect(url_for("home_page"))
+
+    artist = ArtistProfile.query.get_or_404(artist_id)
+
+    if request.method == "POST":
+        name = (request.form.get("name") or "").strip()
+        avatar_url = (request.form.get("avatar_url") or "").strip()
+        bio = (request.form.get("bio") or "").strip()
+
+        if not name:
+            return render_template("edit_artist.html", artist=artist, error="Name is required.")
+
+        # validasi unik
+        exists = ArtistProfile.query.filter(
+            func.lower(ArtistProfile.name) == name.lower(),
+            ArtistProfile.id != artist.id
+        ).first()
+        if exists:
+            return render_template("edit_artist.html", artist=artist, error="Artist name already exists.")
+
+        old_name = artist.name
+
+        # update profile
+        artist.name = name
+        artist.avatar_url = avatar_url if avatar_url else None
+        artist.bio = bio if bio else None
+
+        # kalau nama berubah, update semua Song.artist yg cocok
+        if old_name != name:
+            Song.query.filter(Song.artist == old_name).update({Song.artist: name})
+
+        db.session.commit()
+        return redirect(url_for("admin_artists"))
+
+    return render_template("edit_artist.html", artist=artist)
+
+
+
+
 
 
 # ---------- profile ----------
@@ -1233,6 +1328,52 @@ def home_page():
     # ambil satu lagu rekomendasi utama (kalau mau dipakai di hero, dsb)
     rec_song = recommended_songs[0] if recommended_songs else None
 
+    
+    # ==== ALBUMS (group by artist + album) ====
+    sub = (
+        db.session.query(
+            Song.artist.label("artist"),
+            Song.album.label("album"),
+            func.min(Song.id).label("min_id"),
+            func.count(Song.id).label("song_count"),
+        )
+        .filter(Song.album.isnot(None), Song.album != "")
+        .group_by(Song.artist, Song.album)
+        .subquery()
+    )
+
+    rows = (
+        db.session.query(sub.c.artist, sub.c.album, sub.c.song_count, Song.cover_url)
+        .join(Song, Song.id == sub.c.min_id)
+        .order_by(sub.c.song_count.desc(), sub.c.artist.asc(), sub.c.album.asc())
+        .limit(10)
+        .all()
+    )
+
+    albums = []
+    for artist, album, song_count, cover_url in rows:
+        albums.append({
+            "artist": artist,
+            "album": album,
+            "song_count": song_count,
+            "cover_url": cover_url or url_for("serve_cover", filename="default_cover.png"),
+        })
+        
+    # ==== GENRES (top 10 by jumlah lagu) ====
+    genre_rows = (
+        db.session.query(
+            Song.genre.label("genre"),
+            func.count(Song.id).label("song_count")
+        )
+        .filter(Song.genre.isnot(None), Song.genre != "")
+        .group_by(Song.genre)
+        .order_by(func.count(Song.id).desc(), Song.genre.asc())
+        .limit(10)
+        .all()
+    )
+
+    genres = [{"name": g, "song_count": c} for (g, c) in genre_rows]
+
     return render_template(
         "home.html",
         current_user=user,
@@ -1240,9 +1381,123 @@ def home_page():
         folders=folders,
         recommended_songs=recommended_songs,
         rec_song=rec_song,  
-        random_songs = random_songs
+        random_songs = random_songs,
+        albums = albums,
+        genres = genres,
     )
 
+@app.route("/album")
+def album_page():
+    user = get_current_user()
+    if not user:
+        session.clear()
+        return redirect(url_for("login"))
+
+    artist = (request.args.get("artist") or "").strip()
+    album  = (request.args.get("album") or "").strip()
+    if not artist or not album:
+        return redirect(url_for("home_page"))
+
+    songs = (Song.query
+        .filter(Song.artist == artist, Song.album == album)
+        .order_by(Song.title.asc())
+        .all()
+    )
+
+    root_playlists = Playlist.query.filter_by(user_id=user.id, folder_id=None).all()
+    folders = Folder.query.filter_by(user_id=user.id).all()
+
+    cover = (songs[0].cover_url if songs and songs[0].cover_url else url_for("serve_cover", filename="default_cover.png"))
+
+    return render_template(
+        "album.html",
+        current_user=user,
+        root_playlists=root_playlists,
+        folders=folders,
+        artist=artist,
+        album=album,
+        cover=cover,
+        songs=songs
+    )
+
+
+@app.route("/albums")
+def albums_page():
+    user = get_current_user()
+    if not user:
+        session.clear()
+        return redirect(url_for("login"))
+
+    # versi "show all" (tanpa limit)
+    sub = (
+        db.session.query(
+            Song.artist.label("artist"),
+            Song.album.label("album"),
+            func.min(Song.id).label("min_id"),
+            func.count(Song.id).label("song_count"),
+        )
+        .filter(Song.album.isnot(None), Song.album != "")
+        .group_by(Song.artist, Song.album)
+        .subquery()
+    )
+
+    rows = (
+        db.session.query(sub.c.artist, sub.c.album, sub.c.song_count, Song.cover_url)
+        .join(Song, Song.id == sub.c.min_id)
+        .order_by(sub.c.song_count.desc(), sub.c.artist.asc(), sub.c.album.asc())
+        .all()
+    )
+
+    albums = [{
+        "artist": a,
+        "album": b,
+        "song_count": c,
+        "cover_url": (cv or url_for("serve_cover", filename="default_cover.png")),
+    } for (a,b,c,cv) in rows]
+
+    root_playlists = Playlist.query.filter_by(user_id=user.id, folder_id=None).all()
+    folders = Folder.query.filter_by(user_id=user.id).all()
+
+    return render_template(
+        "albums.html",
+        current_user=user,
+        root_playlists=root_playlists,
+        folders=folders,
+        albums=albums
+    )
+
+
+
+
+@app.route("/genre/<path:genre_name>")
+def genre_page(genre_name):
+    user = get_current_user()
+    if not user:
+        session.clear()
+        return redirect(url_for("login"))
+
+    genre_name = (genre_name or "").strip()
+    if not genre_name:
+        return redirect(url_for("home_page"))
+
+    root_playlists = Playlist.query.filter_by(user_id=user.id, folder_id=None).all()
+    folders = Folder.query.filter_by(user_id=user.id).all()
+
+    songs = (
+        Song.query
+        .filter(Song.genre == genre_name)
+        .order_by(Song.created_at.desc())
+        .all()
+    )
+
+    return render_template(
+        "genre.html",
+        current_user=user,
+        root_playlists=root_playlists,
+        folders=folders,
+        genre=genre_name,
+        songs=songs
+    )
 
 
 # ---------- PLAYLIST DETAIL ----------
@@ -1549,35 +1804,67 @@ def song_page(song_id):
 
 
 @app.route("/songs")
-def song_library():
+@app.route("/songs/<view>")
+def song_library(view="all"):
     user = get_current_user()
     if not user:
         session.clear()
         return redirect(url_for("login"))
 
-    view = request.args.get("view", "all")  # 'all' | 'history' | 'playlists'
+    view = (request.args.get("view") or view or "all").lower()
+    if view not in {"all", "playlists", "history", "albums"}:
+        view = "all"
 
     songs = []
+    albums = []
     root_playlists = []
     folders = []
 
     if view == "all":
         songs = Song.query.order_by(Song.title.asc()).all()
+
     elif view == "playlists":
-        root_playlists = Playlist.query.filter_by(
-            user_id=user.id, folder_id=None
-        ).all()
+        root_playlists = Playlist.query.filter_by(user_id=user.id, folder_id=None).all()
         folders = Folder.query.filter_by(user_id=user.id).all()
-    # view == 'history' → data diambil dari localStorage lewat JS
+
+    elif view == "albums":
+        sub = (
+            db.session.query(
+                Song.artist.label("artist"),
+                Song.album.label("album"),
+                func.min(Song.id).label("min_id"),
+                func.count(Song.id).label("song_count"),
+            )
+            .filter(Song.album.isnot(None), Song.album != "")
+            .group_by(Song.artist, Song.album)
+            .subquery()
+        )
+
+        rows = (
+            db.session.query(sub.c.artist, sub.c.album, sub.c.song_count, Song.cover_url)
+            .join(Song, Song.id == sub.c.min_id)
+            .order_by(sub.c.artist.asc(), sub.c.album.asc())
+            .all()
+        )
+
+        for artist, album, song_count, cover_url in rows:
+            albums.append({
+                "artist": artist,
+                "album": album,
+                "song_count": song_count,
+                "cover_url": cover_url or url_for("serve_cover", filename="default_cover.png"),
+            })
 
     return render_template(
         "song_library.html",
         view=view,
         songs=songs,
+        albums=albums,             # <-- penting
         root_playlists=root_playlists,
         folders=folders,
         current_user=user,
     )
+
 
 
 

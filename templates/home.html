@@ -126,6 +126,108 @@ block content %}
   </div>
 </section>
 
+
+
+
+{# ALBUMS #}
+<section class="section">
+  <div class="section__header">
+    <h2 class="section__title">Albums</h2>
+    <a href="{{ url_for('song_library', view='albums') }}" data-shell-link class="section__link">Show all</a>
+  </div>
+
+  <div class="card-row">
+    {% for al in albums %}
+      <a
+        href="{{ url_for('album_page', artist=al.artist, album=al.album) }}"
+        data-shell-link
+        class="card playlist-card"
+        style="text-decoration:none; color:inherit;"
+      >
+        <div class="card__image" style="background-image:url('{{ al.cover_url }}');"></div>
+        <div class="card__title">{{ al.album }}</div>
+        <div class="card__subtitle">Album • {{ al.artist }} • {{ al.song_count }} lagu</div>
+      </a>
+    {% else %}
+      <article class="card">
+        <div class="card__image"></div>
+        <div class="card__title">Belum ada album</div>
+        <div class="card__subtitle">Isi kolom Album di lagu biar muncul di sini.</div>
+      </article>
+    {% endfor %}
+  </div>
+</section>
+
+
+
+<section class="section">
+  <div class="section__header">
+    <h2 class="section__title">Browse by Genres</h2>
+  </div>
+
+  <div class="card-row">
+    {% for g in genres %}
+      <a
+        href="{{ url_for('genre_page', genre_name=g.name) }}"
+        data-shell-link
+        class="card playlist-card genre-card"
+        style="text-decoration:none; color:inherit;"
+      >
+        <div class="card__image genre-cover">
+          <div class="genre-badge">{{ g.name }}</div>
+        </div>
+        <div class="card__title">{{ g.name }}</div>
+        <div class="card__subtitle">Genre • {{ g.song_count }} lagu</div>
+      </a>
+    {% else %}
+      <article class="card">
+        <div class="card__image genre-cover">
+          <div class="genre-badge">No Genre</div>
+        </div>
+        <div class="card__title">Belum ada genre</div>
+        <div class="card__subtitle">Isi kolom Genre di lagu biar muncul di sini.</div>
+      </article>
+    {% endfor %}
+  </div>
+</section>
+
+<style>
+  .genre-cover{
+    position: relative;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    border-radius: inherit;
+    background:
+      radial-gradient(circle at 30% 20%, rgba(255,255,255,.18), rgba(0,0,0,0) 60%),
+      linear-gradient(135deg, rgba(255,255,255,.10), rgba(0,0,0,0));
+  }
+  .genre-badge{
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    padding: 10px 12px;
+    border-radius: 10px;
+    background: rgba(0,0,0,.35);
+    backdrop-filter: blur(6px);
+    max-width: 90%;
+    text-align:center;
+    overflow:hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* biar tiap card beda “vibe” dikit */
+  .genre-card:nth-child(6n+1) .genre-cover { background: linear-gradient(135deg, rgba(0,170,255,.18), rgba(0,0,0,0)); }
+  .genre-card:nth-child(6n+2) .genre-cover { background: linear-gradient(135deg, rgba(255,0,140,.18), rgba(0,0,0,0)); }
+  .genre-card:nth-child(6n+3) .genre-cover { background: linear-gradient(135deg, rgba(0,255,170,.18), rgba(0,0,0,0)); }
+  .genre-card:nth-child(6n+4) .genre-cover { background: linear-gradient(135deg, rgba(255,200,0,.18), rgba(0,0,0,0)); }
+  .genre-card:nth-child(6n+5) .genre-cover { background: linear-gradient(135deg, rgba(180,0,255,.18), rgba(0,0,0,0)); }
+  .genre-card:nth-child(6n+6) .genre-cover { background: linear-gradient(135deg, rgba(255,80,0,.18), rgba(0,0,0,0)); }
+</style>
+
+
+
 <script>
   // global, bisa dipanggil juga dari global_player.js
   window.renderListeningHistorySection = function () {
@@ -137,7 +239,7 @@ block content %}
     const arr = window.MusicHistory.getListeningHistory(); // terbaru dulu
     if (!arr || arr.length === 0) {
       container.innerHTML =
-        '<p class="section__empty">Belum ada riwayat pemutaran.</p>';
+        '<p class="section__empty">There are no songs, start listening now.</p>';
       return;
     }
 
@@ -181,5 +283,5 @@ block content %}
     window.renderListeningHistorySection();
   }
 </script>
-
+<div>. </div>
 {% endblock %}

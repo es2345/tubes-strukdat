@@ -1,5 +1,14 @@
 document.addEventListener("DOMContentLoaded", function () {
 
+  // ============================================================
+  //  GLOBAL PLAYER (REBUILD) — keep existing variable names/API
+  //  Fixes:
+  //   - seek drag causes “echo/double sound” -> pause while seeking
+  //   - state sometimes not restored after refresh -> fallback keys + migrate
+  //   - loop icon glyph -> use ↻ / ↻1 (more compatible)
+  //   - prevent double-init when script is injected twice (SPA-ish)
+  // ============================================================
+
   class Node {
     constructor(track) {
       this.track = track; // {id, title, artist, audio_url, cover_url}
@@ -149,6 +158,7 @@ document.addEventListener("DOMContentLoaded", function () {
       audio_url: track.audio_url || null,
     };
 
+    // dedupe by id (keep latest)
     listeningHistoryStack.items = listeningHistoryStack.items.filter(
       (item) => String(item.id) !== String(payload.id)
     );
@@ -195,31 +205,29 @@ document.addEventListener("DOMContentLoaded", function () {
     return result;
   }
 
+  function removeSearchHistoryItem(ts) {
+    if (ts == null) return;
 
-function removeSearchHistoryItem(ts) {
-  if (ts == null) return;
+    // hapus 1 item berdasarkan ts (unik per entry)
+    const target = String(ts);
+    searchHistoryStack.items = searchHistoryStack.items.filter(
+      (item) => String(item && item.ts) !== target
+    );
 
-  // hapus 1 item berdasarkan ts (unik per entry)
-  const target = String(ts);
-  searchHistoryStack.items = searchHistoryStack.items.filter(
-    (item) => String(item && item.ts) !== target
-  );
+    saveSearchHistory();
 
-  saveSearchHistory();
-
-  if (typeof window.renderSearchHistorySection === "function") {
-    window.renderSearchHistorySection();
+    if (typeof window.renderSearchHistorySection === "function") {
+      window.renderSearchHistorySection();
+    }
   }
-}
 
-window.MusicHistory = {
-  addSearchQuery,
-  getSearchHistory: getSearchHistoryArray,
-  getListeningHistory: getListeningHistoryArray,
-  clearSearchHistory,
-  removeSearchHistoryItem,
-};
-
+  window.MusicHistory = {
+    addSearchQuery,
+    getSearchHistory: getSearchHistoryArray,
+    getListeningHistory: getListeningHistoryArray,
+    clearSearchHistory,
+    removeSearchHistoryItem,
+  };
 
   // ===================== DOUBLY LINKED LIST (QUEUE PLAYER) =====================
   class DoublyLinkedList {
@@ -320,10 +328,11 @@ window.MusicHistory = {
   const btnPlay = document.getElementById("btnPlay");
   const btnNext = document.getElementById("btnNext");
 
-  if (!audio) {
-    // kalau halaman ini nggak punya player global, cukup keluar
-    return;
-  }
+  if (!audio) return;
+
+  // prevent double init if this script is injected twice (SPA-ish)
+  if (audio.dataset.gpInit === "1") return;
+  audio.dataset.gpInit = "1";
 
   if (typeof audio.volume !== "number" || isNaN(audio.volume)) {
     audio.volume = 0.7;
@@ -341,7 +350,7 @@ window.MusicHistory = {
   let currentNode = null;
   let loopMode = "none"; // "none" | "one" | "all"
 
-  // ===================== MISSING HELPERS (FIX) =====================
+  // ===================== HELPERS =====================
   function isPlayableTrack(track) {
     return !!(track && track.audio_url);
   }
@@ -357,7 +366,6 @@ window.MusicHistory = {
     return null;
   }
 
-  // ===================== HELPERS =====================
   function setUI(track) {
     if (!track) return;
     if (titleEl)  titleEl.textContent  = track.title || "Song title";
@@ -375,6 +383,17 @@ window.MusicHistory = {
   function updatePlayIcon() {
     if (!btnPlay) return;
     btnPlay.textContent = audio.paused ? "▶" : "⏸";
+  }
+
+  function updateLoopButtonUI() {
+    if (!btnLoop) return;
+
+    // active only for all/one
+    btnLoop.classList.toggle("player__btn--loop-active", loopMode !== "none");
+
+    // use glyph that usually exists across fonts
+    if (loopMode === "one") btnLoop.textContent = "↻1";
+    else btnLoop.textContent = "↻";
   }
 
   function serializeState() {
@@ -395,25 +414,62 @@ window.MusicHistory = {
     };
   }
 
-  function updateLoopButtonUI() {
-    if (!btnLoop) return;
+  function _readPlayerStateRaw() {
+    const currentKey = getPlayerStateKey();
+    const keysToTry = [
+      currentKey,
+      PLAYER_STATE_BASE_KEY + "_anon", // fallback if some pages missed userKey
+      PLAYER_STATE_BASE_KEY,           // legacy
+    ];
 
-    btnLoop.classList.toggle("player__btn--loop-active", loopMode !== "none");
-
-    if (loopMode === "one") {
-      btnLoop.textContent = "1";
-    } else {
-      btnLoop.textContent = "⟲";
+    for (const k of keysToTry) {
+      try {
+        const raw = localStorage.getItem(k);
+        if (raw) return { raw, key: k, currentKey };
+      } catch (_) {}
     }
+    return { raw: null, key: null, currentKey };
   }
 
   function saveState() {
     try {
       const st = serializeState();
-      localStorage.setItem(getPlayerStateKey(), JSON.stringify(st));
+      const raw = JSON.stringify(st);
+      localStorage.setItem(getPlayerStateKey(), raw);
     } catch (e) {
       console.warn("Failed to save player state", e);
     }
+  }
+
+  // throttle saveState on timeupdate
+  let _lastSavedSecond = -1;
+
+  function _maybeSaveOnTimeUpdate() {
+    const sec = Math.floor(audio.currentTime || 0);
+    if (sec <= 0) return;
+
+    // every 3 seconds, but only once per second tick
+    if (sec % 3 === 0 && sec !== _lastSavedSecond) {
+      _lastSavedSecond = sec;
+      saveState();
+    }
+  }
+
+  function _safeSetCurrentTime(seconds) {
+    const target = Number(seconds) || 0;
+
+    // attempt immediately
+    try {
+      audio.currentTime = target;
+      return;
+    } catch (_) {}
+
+    // fallback once metadata is ready
+    const once = () => {
+      audio.removeEventListener("loadedmetadata", once);
+      try { audio.currentTime = target; } catch (_) {}
+    };
+    audio.addEventListener("loadedmetadata", once);
   }
 
   function rebuildFromState(st) {
@@ -424,9 +480,7 @@ window.MusicHistory = {
 
     st.tracks.forEach((t, idx) => {
       const node = queue.push(t);
-      if (idx === st.currentIndex) {
-        currentNode = node;
-      }
+      if (idx === st.currentIndex) currentNode = node;
     });
 
     loopMode = st.loopMode || "none";
@@ -443,18 +497,19 @@ window.MusicHistory = {
 
     if (currentNode) {
       const t = currentNode.track;
-      audio.src = t.audio_url || "";
+      if (t && t.audio_url) {
+        audio.pause();
+        audio.src = t.audio_url || "";
+        audio.load();
 
-      try {
-        audio.currentTime = st.position || 0;
-      } catch (_) {}
+        _safeSetCurrentTime(st.position || 0);
+        setUI(t);
 
-      setUI(t);
-
-      if (st.playing && audio.src) {
-        audio.play().then(updatePlayIcon).catch(() => {});
-      } else {
-        updatePlayIcon();
+        if (st.playing && audio.src) {
+          audio.play().then(updatePlayIcon).catch(() => updatePlayIcon());
+        } else {
+          updatePlayIcon();
+        }
       }
     }
   }
@@ -472,12 +527,11 @@ window.MusicHistory = {
         : 0;
     const autoplay = opts.autoplay !== false; // default: true
 
+    audio.pause();
     audio.src = t.audio_url;
+    audio.load();
 
-    try {
-      audio.currentTime = resumeTime;
-    } catch (_) {}
-
+    _safeSetCurrentTime(resumeTime);
     setUI(t);
 
     if (autoplay) {
@@ -489,6 +543,7 @@ window.MusicHistory = {
         })
         .catch((e) => {
           console.error("Failed to play track:", e);
+          updatePlayIcon();
         });
     } else {
       audio.pause();
@@ -508,16 +563,10 @@ window.MusicHistory = {
       if (idx === startIndex) currentNode = node;
     });
 
-    if (!currentNode && queue.head) {
-      currentNode = queue.head;
-    }
+    if (!currentNode && queue.head) currentNode = queue.head;
 
-    if (currentNode) {
-      // terusin opsi (autoplay + resumeTime) dari playlist
-      playNode(currentNode, opts);
-    } else {
-      saveState();
-    }
+    if (currentNode) playNode(currentNode, opts);
+    else saveState();
   }
 
   function setLoop(mode) {
@@ -527,13 +576,9 @@ window.MusicHistory = {
   }
 
   function toggleLoopMode() {
-    if (loopMode === "none") {
-      setLoop("all");
-    } else if (loopMode === "all") {
-      setLoop("one");
-    } else {
-      setLoop("none");
-    }
+    if (loopMode === "none") setLoop("all");
+    else if (loopMode === "all") setLoop("one");
+    else setLoop("none");
   }
 
   function playNext() {
@@ -573,13 +618,11 @@ window.MusicHistory = {
       return;
     }
 
-    // ambil node prev yang valid (skip yang kosong)
     const candidate = getNextValidNode(currentNode.prev, "prev");
 
     if (candidate) {
       playNode(candidate);
     } else if (loopMode === "all" && queue.tail) {
-      // wrap ke tail, tapi pastikan tail valid juga
       const tailValid = getNextValidNode(queue.tail, "prev");
       if (tailValid) playNode(tailValid);
     }
@@ -595,7 +638,10 @@ window.MusicHistory = {
           updatePlayIcon();
           saveState();
         })
-        .catch(console.error);
+        .catch((e) => {
+          console.error(e);
+          updatePlayIcon();
+        });
     } else {
       audio.pause();
       updatePlayIcon();
@@ -637,10 +683,7 @@ window.MusicHistory = {
     if (!audio.duration || !progressFill) return;
     const ratio = audio.currentTime / audio.duration;
     progressFill.style.width = `${ratio * 100}%`;
-
-    if (Math.floor(audio.currentTime) % 3 === 0) {
-      saveState();
-    }
+    _maybeSaveOnTimeUpdate();
   });
 
   audio.addEventListener("play", () => {
@@ -668,11 +711,21 @@ window.MusicHistory = {
   let isSeeking = false;
   let isAdjustingVolume = false;
 
+  // extra local state (does not rename existing vars)
+  let wasPlayingBeforeSeek = false;
+
+  function _getClientX(e) {
+    if (!e) return 0;
+    if (e.touches && e.touches[0]) return e.touches[0].clientX;
+    if (e.changedTouches && e.changedTouches[0]) return e.changedTouches[0].clientX;
+    return e.clientX;
+  }
+
   function seekFromEvent(e) {
     if (!audio.duration || !progressBar) return;
 
     const rect = progressBar.getBoundingClientRect();
-    const offsetX = e.clientX - rect.left;
+    const offsetX = _getClientX(e) - rect.left;
     const ratio = Math.min(Math.max(offsetX / rect.width, 0), 1);
 
     audio.currentTime = ratio * audio.duration;
@@ -686,7 +739,7 @@ window.MusicHistory = {
     if (!volumeBar) return;
 
     const rect = volumeBar.getBoundingClientRect();
-    const offsetX = e.clientX - rect.left;
+    const offsetX = _getClientX(e) - rect.left;
     let ratio = offsetX / rect.width;
 
     if (ratio < 0) ratio = 0;
@@ -701,14 +754,26 @@ window.MusicHistory = {
   }
 
   if (progressBar) {
+    // Click seek: pause briefly to avoid glitch/echo on some browsers
     progressBar.addEventListener("click", (e) => {
       e.preventDefault();
       e.stopPropagation();
+
+      const wasPlaying = !audio.paused;
+      if (wasPlaying) audio.pause();
+
       seekFromEvent(e);
+
+      if (wasPlaying) audio.play().catch(() => {});
       saveState();
     });
 
     progressBar.addEventListener("mousedown", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+
+      wasPlayingBeforeSeek = !audio.paused;
+      audio.pause(); // critical: stop while dragging to prevent “echo”
       isSeeking = true;
       seekFromEvent(e);
     });
@@ -721,6 +786,36 @@ window.MusicHistory = {
     document.addEventListener("mouseup", () => {
       if (!isSeeking) return;
       isSeeking = false;
+
+      if (wasPlayingBeforeSeek) {
+        audio.play().catch(() => {});
+      }
+      saveState();
+    });
+
+    // touch support
+    progressBar.addEventListener("touchstart", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+
+      wasPlayingBeforeSeek = !audio.paused;
+      audio.pause();
+      isSeeking = true;
+      seekFromEvent(e);
+    }, { passive: false });
+
+    document.addEventListener("touchmove", (e) => {
+      if (!isSeeking) return;
+      seekFromEvent(e);
+    }, { passive: false });
+
+    document.addEventListener("touchend", () => {
+      if (!isSeeking) return;
+      isSeeking = false;
+
+      if (wasPlayingBeforeSeek) {
+        audio.play().catch(() => {});
+      }
       saveState();
     });
   }
@@ -733,6 +828,8 @@ window.MusicHistory = {
     });
 
     volumeBar.addEventListener("mousedown", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
       isAdjustingVolume = true;
       setVolumeFromEvent(e);
     });
@@ -743,6 +840,23 @@ window.MusicHistory = {
     });
 
     document.addEventListener("mouseup", () => {
+      isAdjustingVolume = false;
+    });
+
+    // touch support
+    volumeBar.addEventListener("touchstart", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      isAdjustingVolume = true;
+      setVolumeFromEvent(e);
+    }, { passive: false });
+
+    document.addEventListener("touchmove", (e) => {
+      if (!isAdjustingVolume) return;
+      setVolumeFromEvent(e);
+    }, { passive: false });
+
+    document.addEventListener("touchend", () => {
       isAdjustingVolume = false;
     });
   }
@@ -781,7 +895,6 @@ window.MusicHistory = {
       const wasCurrent = (node === currentNode);
       const wasPlaying = !audio.paused;
 
-      // tentukan pengganti kalau yang dihapus adalah current
       let replacement = null;
       if (wasCurrent) {
         replacement =
@@ -789,15 +902,14 @@ window.MusicHistory = {
           getNextValidNode(node.prev, "prev");
       }
 
-      // hapus node dari linked list
       queue.removeNode(node);
 
       if (wasCurrent) {
         currentNode = replacement;
+
         if (currentNode && isPlayableTrack(currentNode.track)) {
           playNode(currentNode, { autoplay: wasPlaying, resumeTime: 0 });
         } else {
-          // queue habis
           currentNode = null;
           audio.pause();
           audio.currentTime = 0;
@@ -806,7 +918,6 @@ window.MusicHistory = {
           saveState();
         }
       } else {
-        // kalau bukan current, cukup save state supaya index/queue keupdate
         saveState();
       }
 
@@ -834,18 +945,24 @@ window.MusicHistory = {
     window.renderListeningHistorySection();
   }
 
+  // restore player state with fallback keys, then migrate to current key
   try {
-    const raw = localStorage.getItem(getPlayerStateKey());
+    const { raw, key, currentKey } = _readPlayerStateRaw();
     if (raw) {
       const st = JSON.parse(raw);
       rebuildFromState(st);
+
+      // migrate to current scoped key if it came from fallback
+      if (key && currentKey && key !== currentKey) {
+        try { localStorage.setItem(currentKey, raw); } catch (_) {}
+      }
     } else {
       updatePlayIcon();
     }
   } catch (e) {
     console.warn("Failed to restore player state", e);
+    updatePlayIcon();
   }
 
-  // pastikan ikon loop konsisten untuk user baru / tanpa state
   updateLoopButtonUI();
 });
