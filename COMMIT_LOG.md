@@ -1,7 +1,6 @@
 # Commit Log – Tubes Strukdat
 
-> Catatan: ini versi **karangan (fiktif)** yang dibuat lebih realistis (tidak semua orang commit di hari yang sama).  
-> Jika ingin yang 100% akurat dari repo, pakai `git log --oneline --decorate --graph`.
+
 
 ## [28-11-2025] – Abraham
 - Membuat repository dan struktur folder awal (`templates/`, `static/`, `data/`).
