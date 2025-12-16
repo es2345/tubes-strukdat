@@ -114,11 +114,11 @@ block content %}
         class="card song-card"
         data-title="{{ song.title }}"
         data-artist="{{ song.artist or 'Unknown artist' }}"
-        data-cover="{{ song.cover_url or url_for('static', filename='images/default_cover.jpg') }}"
+        data-cover="{{ song.cover_url or url_for('static', filename='/covers/default_cover.png') }}"
       >
         <div
           class="card__image"
-          style="background-image:url('{{ song.cover_url or url_for('static', filename='images/default_cover.jpg') }}');"
+          style="background-image:url('{{ song.cover_url or url_for('static', filename='/covers/default_cover.png') }}');"
         ></div>
         <div class="card__title">{{ song.title }}</div>
         <div class="card__subtitle">{{ song.artist or 'Unknown artist' }}</div>
@@ -240,19 +240,18 @@ block content %}
 
 <script>
   // global, bisa dipanggil juga dari global_player.js
-  window.renderListeningHistorySection = function () {
-    const container = document.getElementById("listeningHistoryGrid");
+window.renderListeningHistorySection = function () {
+  (async () => {
+    const container = document.getElementById('listeningHistoryGrid');
     if (!container || !window.MusicHistory) return;
 
-    container.innerHTML = "";
-
-    const arr = window.MusicHistory.getListeningHistory(); // terbaru dulu
-    if (!arr || arr.length === 0) {
-      container.innerHTML =
-        '<p class="section__empty">There are no songs, start listening now.</p>';
+    const arr = window.MusicHistory.getListeningHistory() || [];
+    if (arr.length === 0) {
+      container.innerHTML = '<p class="section__empty">There are no songs, start listening now.</p>';
       return;
     }
 
+    // dedupe by id (kalau kamu sudah punya, pakai punyamu)
     const seen = new Set();
     const unique = [];
     for (const t of arr) {
@@ -262,20 +261,36 @@ block content %}
       unique.push(t);
     }
 
+    // ambil metadata terbaru dari server
+    let latestMap = {};
+    try {
+      const ids = unique.map(t => t.id).join(",");
+      const r = await fetch(`/api/songs?ids=${encodeURIComponent(ids)}`, { cache: "no-store" });
+      if (r.ok) latestMap = await r.json();
+    } catch (e) {
+      latestMap = {};
+    }
+
+    container.innerHTML = "";
     unique.slice(0, 10).forEach((track) => {
-      const cover = track.cover_url || "";
-      const title = track.title || "Unknown title";
-      const artist = track.artist || "Unknown artist";
+      const fresh = latestMap[track.id] || track;
 
-      const link = document.createElement("a");
-      link.href = "/song/" + track.id;
-      link.setAttribute("data-shell-link", "");
-      link.style.textDecoration = "none";
-      link.style.color = "inherit";
+      const cover = (fresh.cover_url && fresh.cover_url !== "None")
+        ? fresh.cover_url
+        : "/covers/default_cover.png";
 
-      const card = document.createElement("article");
-      card.className = "card song-card";
-      card.dataset.songId = track.id;
+      const title  = fresh.title  || "Unknown title";
+      const artist = fresh.artist || "Unknown artist";
+
+      const link = document.createElement('a');
+      link.href = "/song/" + fresh.id;
+      link.setAttribute('data-shell-link', '');
+      link.style.textDecoration = 'none';
+      link.style.color = 'inherit';
+
+      const card = document.createElement('article');
+      card.className = 'card song-card';
+      card.dataset.songId = fresh.id;
 
       card.innerHTML = `
         <div class="card__image" style="background-image:url('${cover}')"></div>
@@ -286,7 +301,9 @@ block content %}
       link.appendChild(card);
       container.appendChild(link);
     });
-  };
+  })();
+};
+
 
   // render awal saat halaman home dimuat
   if (window.MusicHistory) {

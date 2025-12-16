@@ -90,6 +90,7 @@ class Playlist(db.Model):
 
 
 class Song(db.Model):
+    __table_args__ = {"sqlite_autoincrement": True}
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(200), nullable=False)
     artist = db.Column(db.String(120), nullable=False)
@@ -190,6 +191,39 @@ def artist_profile_page(artist_name):
         artist=profile,
         songs=songs,
     )
+
+
+
+
+
+def _serialize_song(song):
+    return {
+        "id": song.id,
+        "title": song.title,
+        "artist": song.artist,
+        "cover_url": song.cover_url or "/covers/default_cover.png",
+        "audio_url": song.audio_url,
+    }
+
+@app.get("/api/songs")
+def api_songs():
+    ids_raw = request.args.get("ids", "")
+    ids = [int(x) for x in ids_raw.split(",") if x.strip().isdigit()]
+    if not ids:
+        return jsonify({})
+
+    songs = Song.query.filter(Song.id.in_(ids)).all()
+
+    def pack(s):
+        return {
+            "id": s.id,
+            "title": s.title,
+            "artist": s.artist,
+            "cover_url": s.cover_url or "/covers/default_cover.png",
+            "audio_url": s.audio_url,
+        }
+
+    return jsonify({s.id: pack(s) for s in songs})
 
 # struktur data hashmap
 

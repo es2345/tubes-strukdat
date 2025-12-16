@@ -1361,20 +1361,18 @@
 
 <script data-page-init>
   // Renderer global untuk section "Riwayat lagu yang didengarkan"
-  window.renderListeningHistorySection = function () {
+window.renderListeningHistorySection = function () {
+  (async () => {
     const container = document.getElementById('listeningHistoryGrid');
     if (!container || !window.MusicHistory) return;
 
-    container.innerHTML = '';
-
-    const arr = window.MusicHistory.getListeningHistory(); // terbaru dulu
-    if (!arr || arr.length === 0) {
-      container.innerHTML =
-        '<p class="section__empty">There are no songs, start listening now.</p>';
+    const arr = window.MusicHistory.getListeningHistory() || [];
+    if (arr.length === 0) {
+      container.innerHTML = '<p class="section__empty">There are no songs, start listening now.</p>';
       return;
     }
 
-    // dedup by id biar nggak dobel
+    // dedupe by id (kalau kamu sudah punya, pakai punyamu)
     const seen = new Set();
     const unique = [];
     for (const t of arr) {
@@ -1384,21 +1382,36 @@
       unique.push(t);
     }
 
-    unique.slice(0, 10).forEach((track) => {
-      const cover  = track.cover_url || '';
-      const title  = track.title  || 'Unknown title';
-      const artist = track.artist || 'Unknown artist';
+    // ambil metadata terbaru dari server
+    let latestMap = {};
+    try {
+      const ids = unique.map(t => t.id).join(",");
+      const r = await fetch(`/api/songs?ids=${encodeURIComponent(ids)}`, { cache: "no-store" });
+      if (r.ok) latestMap = await r.json();
+    } catch (e) {
+      latestMap = {};
+    }
 
-      // bungkus card dalam <a data-shell-link> biar SPA
+    container.innerHTML = "";
+    unique.slice(0, 10).forEach((track) => {
+      const fresh = latestMap[track.id] || track;
+
+      const cover = (fresh.cover_url && fresh.cover_url !== "None")
+        ? fresh.cover_url
+        : "/covers/default_cover.png";
+
+      const title  = fresh.title  || "Unknown title";
+      const artist = fresh.artist || "Unknown artist";
+
       const link = document.createElement('a');
-      link.href = "/song/" + track.id;
+      link.href = "/song/" + fresh.id;
       link.setAttribute('data-shell-link', '');
       link.style.textDecoration = 'none';
       link.style.color = 'inherit';
 
       const card = document.createElement('article');
       card.className = 'card song-card';
-      card.dataset.songId = track.id;
+      card.dataset.songId = fresh.id;
 
       card.innerHTML = `
         <div class="card__image" style="background-image:url('${cover}')"></div>
@@ -1409,7 +1422,9 @@
       link.appendChild(card);
       container.appendChild(link);
     });
-  };
+  })();
+};
+
 
   // panggil sekali saat halaman selesai dirender + MusicHistory sudah siap
   if (window.MusicHistory) {
