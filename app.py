@@ -1369,7 +1369,7 @@ def home_page():
         })
 
     folders = Folder.query.filter_by(user_id=user.id).all()
-
+    newest_songs = Song.query.order_by(Song.id.desc()).limit(10).all()
     # rekomendasi personal berbasis playlist user (pakai hash map)
     recommended_songs = get_recommended_songs_for_user(user, limit=30)
     random_songs = Song.query.order_by(func.random()).limit(10).all()
@@ -1433,6 +1433,7 @@ def home_page():
         random_songs = random_songs,
         albums = albums,
         genres = genres,
+        newest_songs=newest_songs,
     )
 
 @app.route("/album")
@@ -1908,7 +1909,7 @@ def song_library(view="all"):
         "song_library.html",
         view=view,
         songs=songs,
-        albums=albums,             # <-- penting
+        albums=albums,             
         root_playlists=root_playlists,
         folders=folders,
         current_user=user,

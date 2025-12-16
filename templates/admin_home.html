@@ -643,6 +643,11 @@
       <div class="topbar__left">
         <span class="topbar__title">Admin</span>
         <span class="admin-badge">Dashboard</span>
+        <div class="sidebar__item" onclick="window.open('/home', '_blank')">
+        <div class="sidebar__item-icon">🏠</div>
+        <span>Home</span>
+      </div>
+
       </div>
 
       <div class="user-menu">
@@ -668,7 +673,7 @@
         </div>
       </div>
     </header>
-
+    
     <div class="content">
 
       <!-- HEADER -->
@@ -689,10 +694,7 @@
   View All Songs
 </button>
 
-<button class="btn-secondary"
-        onclick="window.location.href='{{ url_for('admin_artists') }}'">
-  Manage Artists
-</button>
+
 
         </div>
       </div>
@@ -765,10 +767,7 @@
       Edit
     </button>
 
-    <button class="btn-small"
-            onclick="window.location.href='{{ url_for('admin_edit_artist', name=song.artist) }}'">
-      Edit Artist
-    </button>
+
     <form method="POST"
           action="{{ url_for('admin_delete_song', song_id=song.id) }}"
           style="display:inline;"
@@ -779,7 +778,6 @@
     </form>
   </div>
 </td>
-
                 </tr>
               {% else %}
                 <tr>

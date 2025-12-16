@@ -544,6 +544,7 @@
         </div>
       </nav>
 
+      
  <nav class="sidebar__nav">
       <div class="sidebar__item">
 
@@ -614,10 +615,12 @@
           </select>
 
           <select id="songSort" class="filter-select">
+            <option value="id_desc">Sort: ID (Newest)</option>
             <option value="title_asc">Sort: Title (A-Z)</option>
             <option value="title_desc">Sort: Title (Z-A)</option>
             <option value="year_desc">Sort: Year (Newest)</option>
             <option value="year_asc">Sort: Year (Oldest)</option>
+            <option value="id_asc">Sort: ID (Oldest)</option>
           </select>
 
           <button id="btnResetSearch" type="button" class="btn-small-ghost">Reset</button>
@@ -806,6 +809,13 @@
     return String(s || "").toLowerCase().trim();
   }
 
+  function safeId(s) {
+  // kolom ID format: "S076" -> 76
+  const n = parseInt(String(s || "").replace(/[^\d]/g, ""), 10);
+  return Number.isFinite(n) ? n : -999999;
+}
+
+
   function safeYear(s) {
     const n = parseInt(String(s || "").replace(/[^\d]/g, ""), 10);
     return Number.isFinite(n) ? n : -999999;
@@ -834,11 +844,15 @@
         const bTitle = normText(b.children[1]?.innerText);
         const aYear  = safeYear(a.children[5]?.innerText);
         const bYear  = safeYear(b.children[5]?.innerText);
+        const aId    = safeId(a.children[0]?.innerText);
+        const bId    = safeId(b.children[0]?.innerText);
 
         if (mode === "title_asc")  return aTitle.localeCompare(bTitle);
         if (mode === "title_desc") return bTitle.localeCompare(aTitle);
         if (mode === "year_desc")  return bYear - aYear;
         if (mode === "year_asc")   return aYear - bYear;
+        if (mode === "id_desc") return bId - aId;
+        if (mode === "id_asc")  return aId - bId;
 
         return 0;
       };

@@ -1,13 +1,5 @@
 document.addEventListener("DOMContentLoaded", function () {
 
-  // ============================================================
-  //  GLOBAL PLAYER (REBUILD) — keep existing variable names/API
-  //  Fixes:
-  //   - seek drag causes “echo/double sound” -> pause while seeking
-  //   - state sometimes not restored after refresh -> fallback keys + migrate
-  //   - loop icon glyph -> use ↻ / ↻1 (more compatible)
-  //   - prevent double-init when script is injected twice (SPA-ish)
-  // ============================================================
 
   class Node {
     constructor(track) {
@@ -16,6 +8,92 @@ document.addEventListener("DOMContentLoaded", function () {
       this.next = null;
     }
   }
+
+  
+  // ===================== DOUBLY LINKED LIST (QUEUE PLAYER) =====================
+  class DoublyLinkedList {
+    constructor() {
+      this.head = null;
+      this.tail = null;
+    }
+
+    push(track) {
+      const node = new Node(track);
+      if (!this.head) {
+        this.head = this.tail = node;
+      } else {
+        node.prev = this.tail;
+        this.tail.next = node;
+        this.tail = node;
+      }
+      return node;
+    }
+
+    clear() {
+      this.head = this.tail = null;
+    }
+
+    toArray() {
+      const arr = [];
+      let cur = this.head;
+      while (cur) {
+        arr.push(cur.track);
+        cur = cur.next;
+      }
+      return arr;
+    }
+
+    getNodeAt(index) {
+      let cur = this.head;
+      let i = 0;
+      while (cur && i < index) {
+        cur = cur.next;
+        i++;
+      }
+      return cur || null;
+    }
+
+    indexOfNode(node) {
+      let cur = this.head;
+      let i = 0;
+      while (cur) {
+        if (cur === node) return i;
+        cur = cur.next;
+        i++;
+      }
+      return -1;
+    }
+
+    findNodeByTrackId(songId) {
+      const target = String(songId);
+      let cur = this.head;
+      while (cur) {
+        const t = cur.track;
+        if (t && t.id != null && String(t.id) === target) return cur;
+        cur = cur.next;
+      }
+      return null;
+    }
+
+    removeNode(node) {
+      if (!node) return false;
+
+      const prev = node.prev;
+      const next = node.next;
+
+      if (prev) prev.next = next;
+      else this.head = next;
+
+      if (next) next.prev = prev;
+      else this.tail = prev;
+
+      node.prev = null;
+      node.next = null;
+      return true;
+    }
+  }
+
+  // ============= STACK =================
 
   class Stack {
     constructor(maxSize = 50) {
@@ -229,88 +307,6 @@ document.addEventListener("DOMContentLoaded", function () {
     removeSearchHistoryItem,
   };
 
-  // ===================== DOUBLY LINKED LIST (QUEUE PLAYER) =====================
-  class DoublyLinkedList {
-    constructor() {
-      this.head = null;
-      this.tail = null;
-    }
-
-    push(track) {
-      const node = new Node(track);
-      if (!this.head) {
-        this.head = this.tail = node;
-      } else {
-        node.prev = this.tail;
-        this.tail.next = node;
-        this.tail = node;
-      }
-      return node;
-    }
-
-    clear() {
-      this.head = this.tail = null;
-    }
-
-    toArray() {
-      const arr = [];
-      let cur = this.head;
-      while (cur) {
-        arr.push(cur.track);
-        cur = cur.next;
-      }
-      return arr;
-    }
-
-    getNodeAt(index) {
-      let cur = this.head;
-      let i = 0;
-      while (cur && i < index) {
-        cur = cur.next;
-        i++;
-      }
-      return cur || null;
-    }
-
-    indexOfNode(node) {
-      let cur = this.head;
-      let i = 0;
-      while (cur) {
-        if (cur === node) return i;
-        cur = cur.next;
-        i++;
-      }
-      return -1;
-    }
-
-    findNodeByTrackId(songId) {
-      const target = String(songId);
-      let cur = this.head;
-      while (cur) {
-        const t = cur.track;
-        if (t && t.id != null && String(t.id) === target) return cur;
-        cur = cur.next;
-      }
-      return null;
-    }
-
-    removeNode(node) {
-      if (!node) return false;
-
-      const prev = node.prev;
-      const next = node.next;
-
-      if (prev) prev.next = next;
-      else this.head = next;
-
-      if (next) next.prev = prev;
-      else this.tail = prev;
-
-      node.prev = null;
-      node.next = null;
-      return true;
-    }
-  }
 
   // ===================== GLOBAL PLAYER =====================
   const audio    = document.getElementById("globalAudio");
